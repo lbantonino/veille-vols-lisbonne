@@ -3,11 +3,14 @@
 import { voyage } from '../config.ts';
 import { codeValide, delaiApresEchecs } from './acces.ts';
 import { lireDonneesAgent } from './donnees.ts';
-import { resumer } from './resume.ts';
+import { resumer, voyageCommence } from './resume.ts';
+import { comparerEnDirect, lireOffres, verifierRyanair } from './direct.ts';
+import { chercherRyanair } from '../sources/ryanair.ts';
 
 // Dépendances remplaçables (tests, serveur local).
 export interface Dependances {
   lire?: typeof lireDonneesAgent;
+  chercher?: typeof chercherRyanair;
   maintenant?: () => Date;
   attendre?: (ms: number) => Promise<void>;
 }
@@ -65,6 +68,37 @@ export async function gererNotes(request: Request, env: EnvRobot, deps: Dependan
     return json(resumer(etat, historique, (deps.maintenant ?? (() => new Date()))()));
   } catch (e) {
     console.error(`Notes illisibles : ${e instanceof Error ? e.message : String(e)}`);
+    return json({ erreur: 'donnees' }, 502);
+  }
+}
+
+const texteErreur = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+
+// POST /api/ryanair : Ryanair interrogé maintenant (ou il y a moins d'une minute).
+export async function gererRyanair(request: Request, env: EnvRobot, deps: Dependances = {}): Promise<Response> {
+  const refus = await verifierAcces(request, env, deps);
+  if (refus) return refus;
+  const maintenant = (deps.maintenant ?? (() => new Date()))();
+  if (voyageCommence(maintenant)) return json({ erreur: 'termine' }, 409);
+  try {
+    return json(await verifierRyanair(maintenant, deps.chercher ?? chercherRyanair));
+  } catch (e) {
+    return json({ erreur: 'ryanair', message: texteErreur(e) }, 502);
+  }
+}
+
+// POST /api/comparer { offres } : les offres Ryanair fraîches comparées aux données de l'agent.
+export async function gererComparer(request: Request, env: EnvRobot, deps: Dependances = {}): Promise<Response> {
+  const refus = await verifierAcces(request, env, deps);
+  if (refus) return refus;
+  const maintenant = (deps.maintenant ?? (() => new Date()))();
+  if (voyageCommence(maintenant)) return json({ erreur: 'termine' }, 409);
+  const corps: unknown = await request.json().catch(() => null);
+  try {
+    const { etat } = await (deps.lire ?? lireDonneesAgent)(env);
+    return json(comparerEnDirect(etat, lireOffres(corps), maintenant));
+  } catch (e) {
+    console.error(`Comparaison impossible : ${texteErreur(e)}`);
     return json({ erreur: 'donnees' }, 502);
   }
 }

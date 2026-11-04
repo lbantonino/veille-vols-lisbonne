@@ -97,6 +97,9 @@ function offresDe(etat: Etat, source: Source): { offres: Offre[]; vuLe: string |
   return { offres, vuLe };
 }
 
+// Le jour du départ, la veille est terminée (même règle que l'agent).
+export const voyageCommence = (maintenant: Date): boolean => maintenant.toISOString().slice(0, 10) >= voyage.aller;
+
 export function resumer(etat: Etat, historique: LigneHistorique[], maintenant: Date): Resume {
   return {
     voyage: { aller: voyage.aller, retour: voyage.retour, horaires: texteHoraires() },
@@ -108,6 +111,6 @@ export function resumer(etat: Etat, historique: LigneHistorique[], maintenant: D
     ryanair: offresDe(etat, 'ryanair'),
     google: offresDe(etat, 'google'),
     echecs: etat.echecs,
-    termine: maintenant.toISOString().slice(0, 10) >= voyage.aller,
+    termine: voyageCommence(maintenant),
   };
 }
