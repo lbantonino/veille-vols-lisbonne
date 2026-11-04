@@ -25,3 +25,30 @@ test('accès : avec le bon code, laisse passer', async () => {
   const requete = new Request('http://local/api/notes', { headers: { 'x-code-acces': 'code-tres-long-1' } });
   assert.equal(await verifierAcces(requete, env, { attendre: async () => {} }), null);
 });
+
+test('notes : sans code, 401 ; avec le code, le résumé', async () => {
+  const { gererNotes } = await import('../../src/robot/http.ts');
+  const { etatInitial } = await import('../../src/decisions.ts');
+  const env = { CODE_ACCES: 'code-tres-long-1' };
+  const deps = {
+    lire: async () => ({ etat: etatInitial(), historique: [] }),
+    maintenant: () => new Date('2026-11-05T00:00:00Z'),
+    attendre: async () => {},
+  };
+  assert.equal((await gererNotes(new Request('http://local/api/notes'), env, deps)).status, 401);
+
+  const ok = await gererNotes(new Request('http://local/api/notes', { headers: { 'x-code-acces': 'code-tres-long-1' } }), env, deps);
+  assert.equal(ok.status, 200);
+  const corps = await ok.json();
+  assert.deepEqual(corps.journal, []);
+  assert.equal(corps.termine, false);
+});
+
+test('notes : données illisibles, 502', async () => {
+  const { gererNotes } = await import('../../src/robot/http.ts');
+  const env = { CODE_ACCES: 'code-tres-long-1' };
+  const deps = { lire: async () => { throw new Error('GitHub a répondu 401'); }, attendre: async () => {} };
+  const res = await gererNotes(new Request('http://local/api/notes', { headers: { 'x-code-acces': 'code-tres-long-1' } }), env, deps);
+  assert.equal(res.status, 502);
+  assert.deepEqual(await res.json(), { erreur: 'donnees' });
+});

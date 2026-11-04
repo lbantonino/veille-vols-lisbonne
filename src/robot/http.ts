@@ -2,6 +2,15 @@
 // Les fichiers de api/ ne font que les appeler ; le serveur local (src/outils/serveur-local.ts) aussi.
 import { voyage } from '../config.ts';
 import { codeValide, delaiApresEchecs } from './acces.ts';
+import { lireDonneesAgent } from './donnees.ts';
+import { resumer } from './resume.ts';
+
+// Dépendances remplaçables (tests, serveur local).
+export interface Dependances {
+  lire?: typeof lireDonneesAgent;
+  maintenant?: () => Date;
+  attendre?: (ms: number) => Promise<void>;
+}
 
 export interface EnvRobot {
   CODE_ACCES?: string;
@@ -45,4 +54,17 @@ export async function verifierAcces(
   dernierEchec = maintenant;
   await (options.attendre ?? patienter)(delaiApresEchecs(echecs));
   return json({ erreur: 'code' }, 401);
+}
+
+// GET /api/notes : le résumé de la mémoire de l'agent (records, journal, courbe, dernières offres).
+export async function gererNotes(request: Request, env: EnvRobot, deps: Dependances = {}): Promise<Response> {
+  const refus = await verifierAcces(request, env, deps);
+  if (refus) return refus;
+  try {
+    const { etat, historique } = await (deps.lire ?? lireDonneesAgent)(env);
+    return json(resumer(etat, historique, (deps.maintenant ?? (() => new Date()))()));
+  } catch (e) {
+    console.error(`Notes illisibles : ${e instanceof Error ? e.message : String(e)}`);
+    return json({ erreur: 'donnees' }, 502);
+  }
 }

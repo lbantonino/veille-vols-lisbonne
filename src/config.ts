@@ -56,5 +56,11 @@ export const google = {
   prixEstTotalDuGroupe: true,
 };
 
+// Minute de chaque heure (UTC) où GitHub lance l'agent : doit rester égale au cron de
+// .github/workflows/veille.yml ('17 * * * *'). Sert à la page du robot pour annoncer le prochain passage.
+export const passage = {
+  minuteUtc: 17,
+};
+
 // Une offre plus vieille que ça n'est plus utilisée pour calculer la meilleure option.
 export const fraicheurMaxHeures = 26;

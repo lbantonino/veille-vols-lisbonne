@@ -1,0 +1,113 @@
+// Ce que la page affiche, préparé côté serveur à partir de la mémoire de l'agent.
+import type { Etat, Offre, Source } from '../types.ts';
+import { passage, voyage } from '../config.ts';
+import { texteHoraires } from '../horaires.ts';
+import type { LigneHistorique } from './donnees.ts';
+
+export interface LigneJournal {
+  le: string;
+  dansHoraires: number | null;
+  tous: number | null;
+  record: boolean;
+  pannes: string[];
+}
+
+export interface PointCourbe {
+  le: string;
+  dansHoraires: number | null;
+  tous: number | null;
+}
+
+export interface Resume {
+  voyage: { aller: string; retour: string; horaires: string };
+  records: Etat['records'];
+  dernierPassage: string | null;
+  prochainPassage: string | null;
+  journal: LigneJournal[];
+  courbe: PointCourbe[];
+  ryanair: { offres: Offre[]; vuLe: string | null };
+  google: { offres: Offre[]; vuLe: string | null };
+  echecs: Etat['echecs'];
+  termine: boolean;
+}
+
+const TAILLE_JOURNAL = 10;
+const POINTS_MAX = 240;
+const ECART_MAX_MS = 75 * 60_000;
+
+const baisse = (avant: number | null, apres: number | null): boolean => avant !== null && apres !== null && apres < avant;
+
+const minOuNull = (valeurs: (number | null)[]): number | null => {
+  const nombres = valeurs.filter((v): v is number => v !== null);
+  return nombres.length ? Math.min(...nombres) : null;
+};
+
+function journal(historique: LigneHistorique[]): LigneJournal[] {
+  return historique
+    .map((ligne, i) => {
+      const precedente = historique[i - 1];
+      return {
+        le: ligne.le,
+        dansHoraires: ligne.meilleurDansHoraires,
+        tous: ligne.meilleurTousHoraires,
+        record:
+          precedente !== undefined &&
+          (baisse(precedente.records.horaires, ligne.records.horaires) || baisse(precedente.records.tous, ligne.records.tous)),
+        pannes: ligne.pannes,
+      };
+    })
+    .slice(-TAILLE_JOURNAL)
+    .reverse();
+}
+
+// Au-delà de 240 passages, regroupe les passages voisins et garde le prix le plus bas de chaque groupe.
+function courbe(historique: LigneHistorique[]): PointCourbe[] {
+  const taille = Math.max(1, Math.ceil(historique.length / POINTS_MAX));
+  const points: PointCourbe[] = [];
+  for (let i = 0; i < historique.length; i += taille) {
+    const paquet = historique.slice(i, i + taille);
+    points.push({
+      le: paquet[0]!.le,
+      dansHoraires: minOuNull(paquet.map((l) => l.meilleurDansHoraires)),
+      tous: minOuNull(paquet.map((l) => l.meilleurTousHoraires)),
+    });
+  }
+  return points;
+}
+
+// Les passages automatiques sont réguliers si les 3 derniers sont rapprochés et le dernier récent.
+export function passagesReguliers(historique: LigneHistorique[], maintenant: Date): boolean {
+  const derniers = historique.slice(-3).map((l) => new Date(l.le).getTime());
+  if (derniers.length < 3) return false;
+  const ecartsOk = derniers.every((t, i) => i === 0 || t - derniers[i - 1]! <= ECART_MAX_MS);
+  return ecartsOk && maintenant.getTime() - derniers[derniers.length - 1]! <= ECART_MAX_MS;
+}
+
+// La prochaine heure pile + `passage.minuteUtc`, strictement après `maintenant`.
+export function prochainPassage(maintenant: Date): string {
+  const prochain = new Date(maintenant);
+  prochain.setUTCMinutes(passage.minuteUtc, 0, 0);
+  if (prochain.getTime() <= maintenant.getTime()) prochain.setUTCHours(prochain.getUTCHours() + 1);
+  return prochain.toISOString();
+}
+
+function offresDe(etat: Etat, source: Source): { offres: Offre[]; vuLe: string | null } {
+  const offres = etat.dernieresOffres.filter((o) => o.source === source);
+  const vuLe = offres.reduce<string | null>((plusRecent, o) => (plusRecent === null || o.observeLe > plusRecent ? o.observeLe : plusRecent), null);
+  return { offres, vuLe };
+}
+
+export function resumer(etat: Etat, historique: LigneHistorique[], maintenant: Date): Resume {
+  return {
+    voyage: { aller: voyage.aller, retour: voyage.retour, horaires: texteHoraires() },
+    records: etat.records,
+    dernierPassage: historique.at(-1)?.le ?? null,
+    prochainPassage: passagesReguliers(historique, maintenant) ? prochainPassage(maintenant) : null,
+    journal: journal(historique),
+    courbe: courbe(historique),
+    ryanair: offresDe(etat, 'ryanair'),
+    google: offresDe(etat, 'google'),
+    echecs: etat.echecs,
+    termine: maintenant.toISOString().slice(0, 10) >= voyage.aller,
+  };
+}
