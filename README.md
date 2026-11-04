@@ -63,7 +63,7 @@ npm run typecheck # vérification TypeScript
 
 - Les adresses de tarifs Ryanair ne sont pas officielles : elles peuvent changer. L'agent prévient s'il ne reçoit plus de réponse.
 - Ryanair ne dit pas combien de places restent à un prix donné : à revérifier au moment de réserver.
-- Le prix de la valise Ryanair est une estimation à ajuster dans `src/config.ts`.
+- Le prix de la valise Ryanair (36 € par vol, mesuré le 04/11/2026) est fixé dans `src/config.ts` : Ryanair peut le faire varier.
 
 ## Stack
 

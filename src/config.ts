@@ -11,9 +11,10 @@ export const voyage = {
 
 export const bagages = {
   // Chez Ryanair, le prix de base ne comprend que le petit sac sous le siège.
-  // Ceci est une ESTIMATION du supplément pour une valise de 10 kg, par personne et par vol.
-  // À remplacer par le vrai prix vu sur ryanair.com (simulation de réservation, sans payer).
-  ryanairValise10kgParVol: 25,
+  // Supplément pour une valise cabine de 10 kg, par personne et par vol.
+  // Mesuré le 04/11/2026 : Google Flights affiche 221 € l'aller-retour avec bagage cabine,
+  // contre 148,60 € sans chez Ryanair, soit environ 36 € par vol.
+  ryanairValise10kgParVol: 36,
 };
 
 export const alertes = {

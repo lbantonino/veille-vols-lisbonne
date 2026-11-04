@@ -45,8 +45,9 @@ export function blocOption(option: Option): string {
   for (const offre of option.offres) {
     if (offre.prixSoloParPersonne === undefined) continue;
     const economie = offre.prixParPersonne - offre.prixSoloParPersonne;
+    const nom = { 'aller-retour': 'Aller-retour', aller: 'Aller', retour: 'Retour' }[offre.sens];
     lignes.push(
-      `⚠️ ${offre.sens === 'retour' ? 'Retour' : 'Aller'} : pour 1 seule personne, ce vol est à ${prix(offre.prixSoloParPersonne)}. ` +
+      `⚠️ ${nom} : pour 1 seule personne, ce vol est à ${prix(offre.prixSoloParPersonne)}. ` +
         `Il ne reste sans doute qu'une place à ce prix : deux réservations séparées feraient économiser ${prix(economie)}.`,
     );
   }
