@@ -5,7 +5,7 @@
   "description": "Agent qui surveille les prix des vols Bruxelles - Lisbonne et prévient sur Telegram",
   "type": "module",
   "engines": {
-    "node": ">=24"
+    "node": "24.x"
   },
   "scripts": {
     "veille": "node --env-file-if-exists=.env src/main.ts",
