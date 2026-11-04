@@ -123,6 +123,15 @@ export function messageRetablie(source: Source): string {
   return `✅ <b>${NOM_SOURCE[source]} répond de nouveau.</b> La veille est complète.`;
 }
 
+// Le petit message silencieux de la journée : il travaille, viens le voir.
+export function messageAuTravail(choix: Choix, lienPage: string): string {
+  const meilleur = choix.horaires
+    ? `Meilleur prix dans tes horaires : <b>${prix(choix.horaires.prixParPersonne)}</b> par personne.`
+    : 'Je n’ai pas encore de prix complet dans tes horaires.';
+  const adresse = lienPage.replace(/^https?:\/\//, '');
+  return `🤖 Je suis à mon bureau, je vérifie les prix.\n${meilleur}\n👉 <a href="${html(lienPage)}">Viens me voir travailler : ${html(adresse)}</a>`;
+}
+
 export function messageFin(): string {
   return `🏁 <b>Veille Lisbonne terminée</b>\nLe jour du départ est arrivé, j'arrête la surveillance.\nBon semi-marathon et joyeux anniversaire ! 🎂🏃`;
 }

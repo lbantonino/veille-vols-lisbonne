@@ -3,7 +3,8 @@
 export const telegramConfigure = (): boolean =>
   Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID);
 
-export async function envoyerTelegram(texte: string): Promise<void> {
+// `silencieux` : le message arrive sans sonnerie ni vibration (messages de routine).
+export async function envoyerTelegram(texte: string, options: { silencieux?: boolean } = {}): Promise<void> {
   const jeton = process.env.TELEGRAM_BOT_TOKEN;
   const conversation = process.env.TELEGRAM_CHAT_ID;
 
@@ -19,6 +20,7 @@ export async function envoyerTelegram(texte: string): Promise<void> {
       chat_id: conversation,
       text: texte,
       parse_mode: 'HTML',
+      disable_notification: options.silencieux === true,
       link_preview_options: { is_disabled: true },
     }),
     signal: AbortSignal.timeout(20_000),

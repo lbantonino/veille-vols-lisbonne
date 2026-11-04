@@ -1,5 +1,17 @@
 // Tes horaires préférés : aller avant 12h, retour après 17h (réglables dans config.ts).
-import { horaires } from './config.ts';
+import { horaires, messagesDeTravail } from './config.ts';
+
+// L'heure (0 à 23) qu'il est à cet instant dans un fuseau, ex. 22 à Bruxelles pour 21:17 UTC en hiver.
+export function heureDansFuseau(maintenant: Date, fuseau: string): number {
+  const heure = new Intl.DateTimeFormat('fr-BE', { timeZone: fuseau, hour: 'numeric', hourCycle: 'h23' }).format(maintenant);
+  return Number.parseInt(heure, 10);
+}
+
+// Les heures où LisbonIA peut t'écrire qu'il travaille (8h à 22h, heure de Bruxelles).
+export function dansHeuresDeTravail(maintenant: Date): boolean {
+  const heure = heureDansFuseau(maintenant, messagesDeTravail.fuseau);
+  return heure >= messagesDeTravail.deHeure && heure < messagesDeTravail.aHeure;
+}
 
 // "2027-03-05T08:10:00" -> "08:10" (heure locale de l'aéroport)
 const heure = (iso: string): string => (iso.split('T')[1] ?? '').slice(0, 5);

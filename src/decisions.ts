@@ -1,7 +1,10 @@
 // Le « cerveau » de l'agent : à partir des prix du moment et de ce qu'il a déjà vu,
 // il décide quels messages t'envoyer. Aucune requête réseau ici, tout est testable.
 import type { AvisGoogle, Choix, Etat, Option, RecordPrix, ResultatSource } from './types.ts';
+import { messagesDeTravail } from './config.ts';
+import { dansHeuresDeTravail } from './horaires.ts';
 import {
+  messageAuTravail,
   messageCible,
   messageDemarrage,
   messagePanne,
@@ -105,4 +108,10 @@ export function decider(
   }
 
   return { etat, messages };
+}
+
+// Le message silencieux « je suis à mon bureau » : en journée seulement, et jamais en plus d'une vraie alerte.
+export function messageDeTravail(maintenant: Date, messagesDuPassage: string[], choix: Choix): string | null {
+  if (!messagesDeTravail.actif || messagesDuPassage.length > 0 || !dansHeuresDeTravail(maintenant)) return null;
+  return messageAuTravail(choix, messagesDeTravail.lienPage);
 }

@@ -33,6 +33,16 @@ export const alertes = {
   echecsAvantAlerte: 3,
 };
 
+export const messagesDeTravail = {
+  // Un message SILENCIEUX à chaque passage en journée : « Je suis à mon bureau, viens me voir ».
+  // Rien la nuit. Les vraies alertes (record, prix cible, panne) gardent leur sonnerie, jour et nuit.
+  actif: true,
+  deHeure: 8, // premier message vers 8h17
+  aHeure: 22, // dernier message vers 21h17
+  fuseau: 'Europe/Brussels',
+  lienPage: 'https://lisbonia.vercel.app',
+};
+
 export const quotaGoogle = {
   // Google Flights (via SerpApi) n'est interrogé qu'une fois par tranche de 4 heures, à tour de rôle :
   // aller-retour dans tes horaires, aller-retour tous horaires, aller simple, retour simple.
