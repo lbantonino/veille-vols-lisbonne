@@ -2,14 +2,242 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0a1222">
   <title>LisbonIA</title>
-  <style>
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0a1222; color: #e8eff8; font: 18px system-ui, sans-serif; }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Figtree:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <p>LisbonIA arrive bientôt.</p>
+  <div class="page">
+    <header class="entete">
+      <p class="marque">
+        <svg class="marque-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13.5 21 10.8v2.4L3 15.9Z M10 12.4l3.6-7.2h2.1l-1.5 7.2Z M10 14.2l3.6 6.6h2.1l-1.5-6.6Z"/></svg>
+        LisbonIA
+      </p>
+      <p class="entete-sous" id="entete-sous">Ton agent de veille des vols</p>
+      <p class="statut" id="statut" hidden></p>
+    </header>
+
+    <main>
+      <section class="bureau" aria-label="Le bureau de LisbonIA">
+        <figure class="scene" id="scene" data-etat="dort">
+          <svg class="scene-svg" viewBox="0 0 400 250" role="img" aria-labelledby="scene-titre">
+            <title id="scene-titre">LisbonIA à son bureau, entouré des pages de prix qu'il surveille, avec son lit au fond de la pièce</title>
+            <defs>
+              <linearGradient id="d-mur" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" style="stop-color: var(--mur-haut)"/>
+                <stop offset="1" style="stop-color: var(--mur-bas)"/>
+              </linearGradient>
+              <radialGradient id="d-halo">
+                <stop offset="0" style="stop-color: var(--lueur); stop-opacity: 0.3"/>
+                <stop offset="1" style="stop-color: var(--lueur); stop-opacity: 0"/>
+              </radialGradient>
+              <radialGradient id="d-lampe" cx="0.5" cy="0" r="1">
+                <stop offset="0" style="stop-color: var(--accent); stop-opacity: 0.45"/>
+                <stop offset="1" style="stop-color: var(--accent); stop-opacity: 0"/>
+              </radialGradient>
+            </defs>
+
+            <!-- La pièce -->
+            <rect width="400" height="250" fill="url(#d-mur)"/>
+            <g class="lambris" aria-hidden="true">
+              <line x1="0" y1="188" x2="400" y2="188"/>
+              <line x1="60" y1="0" x2="60" y2="188"/>
+              <line x1="340" y1="0" x2="340" y2="120"/>
+            </g>
+            <circle class="halo" cx="200" cy="118" r="118" fill="url(#d-halo)"/>
+
+            <!-- Les fils entre les écrans et le robot -->
+            <g class="fils" aria-hidden="true">
+              <path d="M136 72 C 160 82, 170 96, 182 112"/>
+              <path d="M264 72 C 240 82, 230 96, 218 112"/>
+              <path d="M200 79 V 98"/>
+            </g>
+
+            <!-- Les écrans flottants (contenu rempli par scene.js) -->
+            <g transform="translate(14 22) scale(1.109)">
+              <g class="ecran" data-ecran="ryanair">
+                <rect class="ecran-cadre" x="0.5" y="0.5" width="109" height="71" rx="6"/>
+                <path class="ecran-tete" d="M0.5 13 V6.5 a6 6 0 0 1 6 -6 h97 a6 6 0 0 1 6 6 V13 Z"/>
+                <text class="ecran-titre" x="6" y="9.2">Ryanair · CRL ↔ LIS</text>
+                <rect class="balayage" x="3" y="17" width="104" height="11" rx="3"/>
+                <g class="ecran-lignes"></g>
+              </g>
+            </g>
+            <g transform="translate(146 8) scale(0.982)">
+              <g class="ecran" data-ecran="courbe">
+                <rect class="ecran-cadre" x="0.5" y="0.5" width="109" height="71" rx="6"/>
+                <path class="ecran-tete" d="M0.5 13 V6.5 a6 6 0 0 1 6 -6 h97 a6 6 0 0 1 6 6 V13 Z"/>
+                <text class="ecran-titre" x="6" y="9.2">Prix par personne</text>
+                <line class="grille" x1="6" x2="104" y1="22" y2="22"/>
+                <line class="grille" x1="6" x2="104" y1="39" y2="39"/>
+                <line class="grille" x1="6" x2="104" y1="56" y2="56"/>
+                <g transform="translate(8 20)">
+                  <path class="courbe-tous" d=""/>
+                  <path class="courbe-horaires" d=""/>
+                </g>
+                <text class="ecran-prix meilleur courbe-legende" x="104" y="67" text-anchor="end"></text>
+              </g>
+            </g>
+            <g transform="translate(264 22) scale(1.109)">
+              <g class="ecran" data-ecran="google">
+                <rect class="ecran-cadre" x="0.5" y="0.5" width="109" height="71" rx="6"/>
+                <path class="ecran-tete" d="M0.5 13 V6.5 a6 6 0 0 1 6 -6 h97 a6 6 0 0 1 6 6 V13 Z"/>
+                <text class="ecran-titre" x="6" y="9.2">Google Flights · LIS</text>
+                <rect class="balayage" x="3" y="17" width="104" height="11" rx="3"/>
+                <g class="ecran-lignes"></g>
+              </g>
+            </g>
+
+            <!-- Le sol -->
+            <rect class="sol" y="198" width="400" height="52"/>
+            <ellipse class="sol-reflet" cx="200" cy="214" rx="150" ry="12"/>
+
+            <!-- Le lit, au fond à droite -->
+            <g class="lit">
+              <rect class="lit-bois" x="300" y="150" width="9" height="44" rx="3"/>
+              <rect class="lit-bois" x="378" y="132" width="11" height="62" rx="3"/>
+              <rect class="matelas" x="304" y="164" width="80" height="16" rx="5"/>
+              <ellipse class="oreiller" cx="364" cy="162" rx="13" ry="6"/>
+              <rect class="couverture" x="306" y="160" width="54" height="16" rx="7"/>
+            </g>
+
+            <!-- LisbonIA endormi -->
+            <g class="dormeur">
+              <path class="couverture-bosse" d="M310 166 Q326 151 348 158 L352 170 L310 170 Z"/>
+              <g transform="translate(347 136) scale(0.425)">
+                <line class="antenne" x1="40" y1="12" x2="48" y2="5"/>
+                <circle class="antenne-eteinte" cx="49" cy="4" r="3"/>
+                <rect class="coque-ombre" x="4" y="27" width="8" height="18" rx="4"/>
+                <rect class="coque-ombre" x="68" y="27" width="8" height="18" rx="4"/>
+                <rect class="coque" x="10" y="12" width="60" height="48" rx="22"/>
+                <rect class="visiere" x="17" y="21" width="46" height="30" rx="14"/>
+                <path class="paupiere" d="M25 36 q6 5 12 0 M43 36 q6 5 12 0"/>
+              </g>
+            </g>
+
+            <!-- La lampe de bureau -->
+            <path class="lampe-cone" d="M119 152 L 88 185 L 156 185 Z" fill="url(#d-lampe)"/>
+            <path class="lampe-pied" d="M104 184 V158 L114 146"/>
+            <path class="lampe-tete" d="M108 140 L125 146 L119 154 Z"/>
+
+            <!-- LisbonIA debout (il marche entre son lit et son bureau) -->
+            <g class="marcheur">
+              <g transform="translate(155 80) scale(1.125)">
+                <g class="robot">
+                  <g class="jambes">
+                    <rect class="jambe jambe-g coque-ombre" x="27" y="100" width="10" height="18" rx="5"/>
+                    <rect class="jambe jambe-d coque-ombre" x="43" y="100" width="10" height="18" rx="5"/>
+                  </g>
+                  <rect class="bras bras-g coque-ombre" x="8" y="64" width="10" height="28" rx="5"/>
+                  <rect class="bras bras-d coque-ombre" x="62" y="64" width="10" height="28" rx="5"/>
+                  <rect class="coque" x="18" y="58" width="44" height="48" rx="16"/>
+                  <circle class="visiere" cx="40" cy="80" r="9"/>
+                  <path class="lueur-f avion" d="M33 80.5 L47 78.5 L47 81.5 Z M39 79.5 L41.5 74 L43.5 74 L42.5 79.5 Z M39 81 L41.5 86 L43.5 86 L42.5 81 Z"/>
+                  <g class="tete">
+                    <line class="antenne" x1="40" y1="12" x2="40" y2="4"/>
+                    <circle class="lueur-f antenne-bout" cx="40" cy="4" r="3.2"/>
+                    <rect class="coque-ombre" x="4" y="27" width="8" height="18" rx="4"/>
+                    <rect class="coque-ombre" x="68" y="27" width="8" height="18" rx="4"/>
+                    <rect class="coque" x="10" y="12" width="60" height="48" rx="22"/>
+                    <path class="reflet" d="M20 22 Q30 15 44 15"/>
+                    <rect class="visiere" x="17" y="21" width="46" height="30" rx="14"/>
+                    <g class="yeux">
+                      <ellipse class="lueur-f" cx="31" cy="35" rx="5" ry="6"/>
+                      <ellipse class="lueur-f" cx="49" cy="35" rx="5" ry="6"/>
+                    </g>
+                    <path class="sourire" d="M34 44 Q40 48 46 44"/>
+                  </g>
+                </g>
+              </g>
+            </g>
+
+            <!-- Le bureau et l'ordinateur -->
+            <rect class="bureau-plateau" x="80" y="184" width="240" height="10" rx="3"/>
+            <rect class="bureau-face" x="92" y="194" width="216" height="40"/>
+            <path class="ordi-dos" d="M165 184 L235 184 L229 146 L171 146 Z"/>
+            <path class="ordi-logo" d="M193 166 L207 164 L207 167 Z M199 165 L201.5 160 L203.5 160 L202.5 165 Z M199 166.5 L201.5 171 L203.5 171 L202.5 166.5 Z"/>
+            <rect class="ordi-base" x="158" y="182" width="84" height="4" rx="2"/>
+            <g class="mains">
+              <rect class="main main-g coque" x="161" y="177" width="13" height="8" rx="4"/>
+              <rect class="main main-d coque" x="226" y="177" width="13" height="8" rx="4"/>
+            </g>
+
+            <!-- La nuit -->
+            <rect class="voile-nuit" width="400" height="250"/>
+            <g class="zzz" aria-hidden="true">
+              <text x="370" y="130">z</text>
+              <text x="379" y="119">z</text>
+              <text x="388" y="106">Z</text>
+            </g>
+          </svg>
+        </figure>
+
+        <p class="bulle" id="bulle" aria-live="polite"><span class="bulle-texte">Zzz…</span></p>
+
+        <form class="acces" id="acces" hidden>
+          <label class="acces-label" for="code">Code d'accès</label>
+          <div class="acces-ligne">
+            <input class="acces-champ" id="code" name="code" type="password" autocomplete="current-password" minlength="12" required>
+            <button class="bouton" type="submit">Réveiller LisbonIA</button>
+          </div>
+          <p class="acces-erreur" id="acces-erreur" hidden>Ce code ne marche pas. Réessaie.</p>
+        </form>
+
+        <div class="cartes" id="cartes" aria-label="Ce que LisbonIA consulte" hidden>
+          <article class="carte" data-carte="ryanair">
+            <h2 class="carte-titre">Ryanair</h2>
+            <p class="carte-sous">Charleroi ↔ Lisbonne, en direct</p>
+            <ol class="carte-lignes"></ol>
+            <p class="carte-age"></p>
+          </article>
+          <article class="carte" data-carte="google">
+            <h2 class="carte-titre">Google Flights</h2>
+            <p class="carte-sous">Zaventem et Charleroi ↔ Lisbonne</p>
+            <ol class="carte-lignes"></ol>
+            <p class="carte-age"></p>
+          </article>
+          <article class="carte" data-carte="courbe">
+            <h2 class="carte-titre">Ses records</h2>
+            <p class="carte-sous">Prix par personne, valise comprise</p>
+            <ol class="carte-lignes"></ol>
+            <p class="carte-age"></p>
+          </article>
+        </div>
+      </section>
+
+      <section class="notes" id="notes" hidden>
+        <div class="bloc meilleurs" id="meilleurs"></div>
+        <div class="bloc evolution">
+          <h2 class="bloc-titre">L'évolution des prix</h2>
+          <p class="bloc-sous">Meilleur prix par personne à chaque passage de l'agent</p>
+          <div class="courbe-cadre">
+            <svg class="courbe-grande" id="courbe" viewBox="0 0 600 200" role="img" aria-label="Courbe des prix par personne">
+              <g class="courbe-grille"></g>
+              <path class="courbe-tous" d=""/>
+              <path class="courbe-horaires" d=""/>
+            </svg>
+          </div>
+          <p class="legende">
+            <span class="legende-item legende-horaires">Dans tes horaires</span>
+            <span class="legende-item legende-tous">Tous horaires</span>
+          </p>
+        </div>
+        <div class="bloc journal">
+          <h2 class="bloc-titre">Ses derniers passages</h2>
+          <ol class="journal-liste" id="journal"></ol>
+        </div>
+      </section>
+    </main>
+
+    <footer class="pied">
+      <p>Prix relevés sur Ryanair et Google Flights. LisbonIA surveille, il ne réserve jamais rien à ta place.</p>
+    </footer>
+  </div>
+  <script type="module" src="js/page.js"></script>
 </body>
 </html>
