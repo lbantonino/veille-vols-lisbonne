@@ -6,10 +6,11 @@ Un agent qui surveille tout seul le prix des vols entre Bruxelles et Lisbonne po
 
 - **Ryanair toutes les heures** (Charleroi), via les tarifs publics du site.
 - **Google Flights** (TAP, Brussels Airlines et les autres) via SerpApi, au plus une fois toutes les 4 heures.
+- **Mes horaires en priorité** : aller avant 12h, retour après 17h. Tous les vols restent surveillés, mais chaque prix est classé « dans mes horaires » ou « hors horaires », avec un record pour chacun.
 - **Compare tout** : les allers-retours, mais aussi un aller et un retour séparés, même chez deux compagnies ou dans deux aéroports différents.
 - **Le vrai prix** : billet et valise de 10 kg compris, affiché par personne pour 2 adultes.
 - **Places pour deux** : il compare le prix pour 1 personne et pour 2, et signale quand il ne reste sans doute qu'une place au prix le plus bas.
-- **Des alertes utiles** : nouveau record, prix jugé bas par Google, prix cible atteint, source en panne. Le silence veut dire que tout va bien.
+- **Des alertes utiles** : nouveau record dans mes horaires, nouveau record hors horaires (marqué ⏰), prix jugé bas par Google, prix cible atteint, source en panne. Le silence veut dire que tout va bien.
 - **S'arrête tout seul** le jour du départ.
 
 ## Comment ça marche
@@ -50,12 +51,12 @@ Sans Telegram configuré, l'agent tourne en mode essai et affiche les messages a
 
 ## Réglages
 
-Tout se trouve dans [`src/config.ts`](src/config.ts) : dates, aéroports, nombre d'adultes, prix de la valise Ryanair, prix cible, fréquence de Google Flights.
+Tout se trouve dans [`src/config.ts`](src/config.ts) : dates, horaires préférés, aéroports, nombre d'adultes, prix de la valise Ryanair, prix cible, fréquence de Google Flights.
 
 ## Tests
 
 ```bash
-npm test          # 17 tests
+npm test          # 24 tests
 npm run typecheck # vérification TypeScript
 ```
 

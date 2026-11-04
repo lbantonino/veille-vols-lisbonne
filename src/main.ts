@@ -1,11 +1,11 @@
 // Un passage de l'agent. GitHub le lance toutes les heures (voir .github/workflows/veille.yml).
 import { appendFile } from 'node:fs/promises';
 import { alertes, fraicheurMaxHeures, quotaGoogle, voyage } from './config.ts';
-import { cleOffre, creneauGoogle, fusionnerOffres, meilleureOption, memesVols, SENS_GOOGLE } from './analyse.ts';
-import { decider, seraitUnRecord, type Reglages } from './decisions.ts';
+import { choisir, creneauGoogle, fusionnerOffres, memesVols } from './analyse.ts';
+import { decider, optionRecord, type Reglages } from './decisions.ts';
 import { messageFin } from './alertes.ts';
 import { chercherRyanair } from './sources/ryanair.ts';
-import { chercherGoogle, lireQuotaSerpApi } from './sources/google.ts';
+import { chercherGoogle, cleRequete, lireQuotaSerpApi, REQUETES_GOOGLE } from './sources/google.ts';
 import { ajouterHistorique, ecrireEtat, lireEtat } from './stockage.ts';
 import { envoyerTelegram, telegramConfigure } from './telegram.ts';
 import { prix, texteErreur } from './format.ts';
@@ -66,13 +66,13 @@ async function main(): Promise<void> {
       if (restantes <= quotaGoogle.reserve) {
         console.log(`Google Flights en pause : ${restantes} recherches restantes, réserve de ${quotaGoogle.reserve} gardée.`);
       } else {
-        const sens = SENS_GOOGLE[etat.google.rotation % SENS_GOOGLE.length] ?? 'aller-retour';
-        const resultat = await chercherGoogle(sens, voyage.adultes, cle, maintenant);
+        const requete = REQUETES_GOOGLE[etat.google.rotation % REQUETES_GOOGLE.length] ?? REQUETES_GOOGLE[0]!;
+        const resultat = await chercherGoogle(requete, voyage.adultes, cle, maintenant);
         nouvelles.push(...resultat.offres);
-        clesRafraichies.push(cleOffre({ source: 'google', sens }));
+        clesRafraichies.push(cleRequete(requete));
         avis = resultat.avis;
         etat.google.rotation += 1;
-        console.log(`Google Flights (${sens}) : ${resultat.offres.length} offres, ${restantes - 1} recherches restantes.`);
+        console.log(`Google Flights (${cleRequete(requete)}) : ${resultat.offres.length} offres, ${restantes - 1} recherches restantes.`);
       }
       etat.google.dernierCreneau = creneau;
       resultats.push({ source: 'google', ok: true });
@@ -83,15 +83,16 @@ async function main(): Promise<void> {
   }
 
   etat.dernieresOffres = fusionnerOffres(etat.dernieresOffres, nouvelles, clesRafraichies, maintenant, fraicheurMaxHeures);
-  const option = meilleureOption(etat.dernieresOffres);
+  const choix = choisir(etat.dernieresOffres);
 
   // Nouveau record venant de Google : une recherche pour 1 personne (au plus une par jour)
   // pour repérer une place seule moins chère.
-  const offreGoogle = option?.offres.find((o) => o.source === 'google');
-  if (cle && offreGoogle && seraitUnRecord(etat, option ?? null, reglages) && etat.google.soloLe !== aujourdhui) {
+  const offreGoogle = optionRecord(etat, choix, reglages)?.offres.find((o) => o.source === 'google');
+  if (cle && offreGoogle && etat.google.soloLe !== aujourdhui) {
     try {
       if ((await lireQuotaSerpApi(cle)) > quotaGoogle.reserve) {
-        const solo = await chercherGoogle(offreGoogle.sens, 1, cle, maintenant);
+        const requete = { sens: offreGoogle.sens, horaires: offreGoogle.requete?.endsWith(':horaires') ?? false };
+        const solo = await chercherGoogle(requete, 1, cle, maintenant);
         const memeVol = solo.offres.find((o) => memesVols(o, offreGoogle));
         if (memeVol && memeVol.prixParPersonne < offreGoogle.prixParPersonne - 0.01) {
           offreGoogle.prixSoloParPersonne = memeVol.prixParPersonne;
@@ -103,23 +104,29 @@ async function main(): Promise<void> {
     }
   }
 
-  const { etat: etatApres, messages } = decider(etat, option, avis, resultats, reglages, maintenant);
+  const { etat: etatApres, messages } = decider(etat, choix, avis, resultats, reglages, maintenant);
 
+  const enTexte = (p: number | undefined) => (p === undefined ? 'aucun' : prix(p));
   console.log(
-    option
-      ? `Meilleure option : ${prix(option.prixParPersonne)} par personne (record : ${prix(etatApres.record?.prixParPersonne ?? option.prixParPersonne)}).`
-      : 'Aucune option complète pour le moment.',
+    `Dans tes horaires : ${enTexte(choix.horaires?.prixParPersonne)} par personne` +
+      ` | tous horaires : ${enTexte(choix.tous?.prixParPersonne)}` +
+      ` | records : ${enTexte(etatApres.records.horaires?.prixParPersonne)} / ${enTexte(etatApres.records.tous?.prixParPersonne)}.`,
   );
 
   await ajouterHistorique({
     le: maintenant.toISOString(),
-    meilleurParPersonne: option?.prixParPersonne ?? null,
-    record: etatApres.record?.prixParPersonne ?? null,
+    meilleurDansHoraires: choix.horaires?.prixParPersonne ?? null,
+    meilleurTousHoraires: choix.tous?.prixParPersonne ?? null,
+    records: {
+      horaires: etatApres.records.horaires?.prixParPersonne ?? null,
+      tous: etatApres.records.tous?.prixParPersonne ?? null,
+    },
     avisGoogle: avis,
     offres: nouvelles.map((o) => ({
       source: o.source,
       sens: o.sens,
       prixParPersonne: o.prixParPersonne,
+      dansHoraires: o.dansHoraires,
       ...(o.prixSoloParPersonne !== undefined ? { soloParPersonne: o.prixSoloParPersonne } : {}),
       vols: o.vols.map((v) => `${v.numero} ${v.de}-${v.vers} ${v.depart}`),
     })),

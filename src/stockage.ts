@@ -11,7 +11,10 @@ const FICHIER_HISTORIQUE = new URL('historique.jsonl', DOSSIER);
 
 export async function lireEtat(): Promise<Etat> {
   try {
-    const sauvegarde = JSON.parse(await readFile(FICHIER_ETAT, 'utf8')) as Partial<Etat>;
+    // `record` vient de l'ancienne version (un seul record) : on l'ignore.
+    const { record: _ancienFormat, ...sauvegarde } = JSON.parse(await readFile(FICHIER_ETAT, 'utf8')) as Partial<Etat> & {
+      record?: unknown;
+    };
     return { ...etatInitial(), ...sauvegarde };
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') return etatInitial();

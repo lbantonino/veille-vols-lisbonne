@@ -9,6 +9,13 @@ export const voyage = {
   volsDirectsSeulement: true,
 } as const;
 
+export const horaires = {
+  // Tes horaires préférés (heure locale de chaque aéroport). L'agent surveille quand même TOUS les vols,
+  // mais il classe chaque prix « dans tes horaires » ou « hors horaires ».
+  allerAvant: '12:00', // le 5 mars, départ de Bruxelles avant cette heure
+  retourApres: '17:00', // le 8 mars, départ de Lisbonne à partir de cette heure
+};
+
 export const bagages = {
   // Chez Ryanair, le prix de base ne comprend que le petit sac sous le siège.
   // Supplément pour une valise cabine de 10 kg, par personne et par vol.
@@ -27,7 +34,8 @@ export const alertes = {
 };
 
 export const quotaGoogle = {
-  // Google Flights (via SerpApi) n'est interrogé qu'une fois par tranche de 4 heures :
+  // Google Flights (via SerpApi) n'est interrogé qu'une fois par tranche de 4 heures, à tour de rôle :
+  // aller-retour dans tes horaires, aller-retour tous horaires, aller simple, retour simple.
   // 6 recherches par jour, 186 au maximum sur un mois de 31 jours, pour 250 gratuites.
   heuresParCreneau: 4,
   // L'agent ne descend JAMAIS sous ce nombre de recherches restantes. Aucun dépassement possible.
@@ -36,6 +44,8 @@ export const quotaGoogle = {
 
 export const ryanair = {
   marche: 'fr-be',
+  // Ryanair ne dessert Lisbonne que depuis Charleroi (vérifié le 04/11/2026).
+  aeroports: ['CRL'],
 };
 
 export const google = {

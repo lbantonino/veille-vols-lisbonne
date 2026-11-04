@@ -1,8 +1,9 @@
 // Ryanair publie ses tarifs les plus bas via une adresse non officielle mais publique, sans clé
-// ni limite connue. On reste raisonnable : quelques appels par heure.
-import type { Offre, Sens } from '../types.ts';
-import { voyage, bagages, ryanair as reglages } from '../config.ts';
+// ni limite connue. On reste raisonnable : 4 appels par heure.
+import type { Offre } from '../types.ts';
+import { voyage, bagages, horaires, ryanair as reglages } from '../config.ts';
 import { arrondi } from '../format.ts';
+import { minuteAvant, volDansHoraires } from '../horaires.ts';
 
 const BASE = 'https://www.ryanair.com/api/farfnd/v4/roundTripFares';
 const NAVIGATEUR =
@@ -38,7 +39,8 @@ export function lienRyanair(de: string, vers: string, aller: string, adultes: nu
   return `https://www.ryanair.com/be/fr/trip/flights/select?${p}`;
 }
 
-async function appeler(origine: string, adultes: number): Promise<ReponseRyanair> {
+// `dansTesHoraires` : ne garder que les vols aller avant 12h et retour après 17h (filtre de Ryanair).
+async function appeler(origine: string, adultes: number, dansTesHoraires: boolean): Promise<ReponseRyanair> {
   const p = new URLSearchParams({
     departureAirportIataCode: origine,
     arrivalAirportIataCode: voyage.vers,
@@ -49,6 +51,12 @@ async function appeler(origine: string, adultes: number): Promise<ReponseRyanair
     market: reglages.marche,
     adultPaxCount: String(adultes),
   });
+  if (dansTesHoraires) {
+    p.set('outboundDepartureTimeFrom', '00:00');
+    p.set('outboundDepartureTimeTo', minuteAvant(horaires.allerAvant));
+    p.set('inboundDepartureTimeFrom', horaires.retourApres);
+    p.set('inboundDepartureTimeTo', '23:59');
+  }
   const reponse = await fetch(`${BASE}?${p}`, {
     headers: { 'user-agent': NAVIGATEUR, accept: 'application/json' },
     signal: AbortSignal.timeout(20_000),
@@ -70,7 +78,7 @@ export function convertirRyanair(
   const offres: Offre[] = [];
 
   for (const tarif of duo.fares) {
-    const jambes: [Sens, JambeRyanair][] = [
+    const jambes: ['aller' | 'retour', JambeRyanair][] = [
       ['aller', tarif.outbound],
       ['retour', tarif.inbound],
     ];
@@ -88,6 +96,7 @@ export function convertirRyanair(
         prixParPersonne: arrondi(parPersonne + valiseParVol),
         bagagesParPersonne: valiseParVol,
         ...(soloMoinsCher ? { prixSoloParPersonne: arrondi(memeVolSolo.price.value + valiseParVol) } : {}),
+        dansHoraires: volDansHoraires(sens, jambe.departureDate),
         vols: [
           {
             compagnie: 'Ryanair',
@@ -110,12 +119,15 @@ export function convertirRyanair(
   return offres;
 }
 
+// Deux recherches par aéroport : le moins cher tous horaires, et le moins cher dans tes horaires.
 export async function chercherRyanair(maintenant: Date): Promise<Offre[]> {
   const offres: Offre[] = [];
-  for (const origine of voyage.depuis) {
-    const duo = await appeler(origine, voyage.adultes);
-    const solo = voyage.adultes > 1 ? await appeler(origine, 1) : null;
-    offres.push(...convertirRyanair(duo, solo, voyage.adultes, bagages.ryanairValise10kgParVol, maintenant));
+  for (const origine of reglages.aeroports) {
+    for (const dansTesHoraires of [false, true]) {
+      const duo = await appeler(origine, voyage.adultes, dansTesHoraires);
+      const solo = voyage.adultes > 1 ? await appeler(origine, 1, dansTesHoraires) : null;
+      offres.push(...convertirRyanair(duo, solo, voyage.adultes, bagages.ryanairValise10kgParVol, maintenant));
+    }
   }
   return offres;
 }

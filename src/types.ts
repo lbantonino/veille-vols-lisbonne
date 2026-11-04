@@ -14,10 +14,15 @@ export interface Offre {
   sens: Sens;
   // Prix pour UNE personne, valise comprise, avec des places pour tout le groupe.
   prixParPersonne: number;
-  // Part des bagages déjà comptée dans prixParPersonne (estimation pour Ryanair, 0 pour Google).
+  // Part des bagages déjà comptée dans prixParPersonne (Ryanair ; 0 pour Google qui l'inclut déjà).
   bagagesParPersonne: number;
   // Prix trouvé en cherchant pour 1 seule personne, seulement s'il est plus bas que pour le groupe.
   prixSoloParPersonne?: number;
+  // true si l'offre respecte tes horaires. Pour un aller-retour Google sans filtre d'horaires,
+  // l'heure du retour est inconnue : false.
+  dansHoraires: boolean;
+  // Recherche d'origine quand une source en fait plusieurs du même sens (ex. "google:aller-retour:horaires").
+  requete?: string;
   vols: Vol[]; // pour un aller-retour Google, seul l'aller est connu
   lien: string;
   observeLe: string; // date ISO
@@ -26,7 +31,14 @@ export interface Offre {
 // Une façon complète de faire le voyage : un aller-retour, ou un aller + un retour séparés.
 export interface Option {
   prixParPersonne: number;
+  dansHoraires: boolean;
   offres: Offre[];
+}
+
+// Les deux meilleures options du moment : dans tes horaires, et tous horaires confondus.
+export interface Choix {
+  horaires: Option | null;
+  tous: Option | null;
 }
 
 export interface AvisGoogle {
@@ -34,10 +46,16 @@ export interface AvisGoogle {
   fourchette?: [number, number]; // prix habituels, par personne
 }
 
+export interface RecordPrix {
+  prixParPersonne: number;
+  le: string;
+  option: Option;
+}
+
 export interface Etat {
   demarre: boolean;
   termine: boolean;
-  record: { prixParPersonne: number; le: string; option: Option } | null;
+  records: { horaires: RecordPrix | null; tous: RecordPrix | null };
   dernieresOffres: Offre[];
   echecs: Record<Source, number>;
   google: {

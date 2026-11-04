@@ -2,8 +2,9 @@
 // Le compte gratuit n'a pas de carte bancaire : SerpApi ne peut rien facturer.
 // En plus, l'agent vérifie le quota restant avant CHAQUE recherche (cette vérification est gratuite).
 import type { AvisGoogle, Offre, Sens } from '../types.ts';
-import { voyage, google as reglages } from '../config.ts';
+import { voyage, google as reglages, horaires } from '../config.ts';
 import { arrondi } from '../format.ts';
+import { minuteAvant, volDansHoraires } from '../horaires.ts';
 
 interface VolGoogle {
   departure_airport: { id: string; time: string };
@@ -25,9 +26,26 @@ export interface ReponseGoogle {
   search_metadata?: { google_flights_url?: string };
 }
 
+// Une recherche Google : un sens, avec ou sans le filtre de tes horaires (seulement pour l'aller-retour,
+// car Google ne donne pas l'heure du retour dans une recherche aller-retour).
+export interface RequeteGoogle {
+  sens: Sens;
+  horaires: boolean;
+}
+
+// L'ordre dans lequel l'agent fait ses recherches, une par créneau de 4 heures.
+export const REQUETES_GOOGLE: RequeteGoogle[] = [
+  { sens: 'aller-retour', horaires: true },
+  { sens: 'aller-retour', horaires: false },
+  { sens: 'aller', horaires: false },
+  { sens: 'retour', horaires: false },
+];
+
+export const cleRequete = (q: RequeteGoogle): string => `google:${q.sens}${q.horaires ? ':horaires' : ''}`;
+
 const depuis = (): string => voyage.depuis.join(',');
 
-export function parametresGoogle(sens: Sens, adultes: number, cle: string): URLSearchParams {
+export function parametresGoogle(q: RequeteGoogle, adultes: number, cle: string): URLSearchParams {
   const p = new URLSearchParams({
     engine: 'google_flights',
     adults: String(adultes),
@@ -39,13 +57,18 @@ export function parametresGoogle(sens: Sens, adultes: number, cle: string): URLS
   });
   if (voyage.volsDirectsSeulement) p.set('stops', '1');
 
-  if (sens === 'aller-retour') {
+  if (q.sens === 'aller-retour') {
     p.set('type', '1');
     p.set('departure_id', depuis());
     p.set('arrival_id', voyage.vers);
     p.set('outbound_date', voyage.aller);
     p.set('return_date', voyage.retour);
-  } else if (sens === 'aller') {
+    if (q.horaires) {
+      // Format SerpApi : "heure de début,heure de fin" (ex. "0,11" = de 0h00 à 11h59).
+      p.set('outbound_times', `0,${Number(minuteAvant(horaires.allerAvant).slice(0, 2))}`);
+      p.set('return_times', `${Number(horaires.retourApres.slice(0, 2))},23`);
+    }
+  } else if (q.sens === 'aller') {
     p.set('type', '2');
     p.set('departure_id', depuis());
     p.set('arrival_id', voyage.vers);
@@ -69,9 +92,18 @@ export function lienGoogle(sens: Sens, adultes: number): string {
   return `https://www.google.com/travel/flights?hl=fr&curr=EUR&q=${encodeURIComponent(`${q} nonstop ${adultes} adults`)}`;
 }
 
+function dansHoraires(q: RequeteGoogle, vols: Offre['vols']): boolean {
+  const premier = vols[0];
+  if (!premier) return false;
+  if (q.sens === 'aller') return volDansHoraires('aller', premier.depart);
+  if (q.sens === 'retour') return volDansHoraires('retour', premier.depart);
+  // Aller-retour : le retour n'est garanti dans tes horaires que si la recherche était filtrée.
+  return q.horaires && volDansHoraires('aller', premier.depart);
+}
+
 export function convertirGoogle(
   reponse: ReponseGoogle,
-  sens: Sens,
+  q: RequeteGoogle,
   adultes: number,
   maintenant: Date,
 ): { offres: Offre[]; avis: AvisGoogle | null } {
@@ -81,30 +113,35 @@ export function convertirGoogle(
   }
 
   const diviseur = reglages.prixEstTotalDuGroupe ? adultes : 1;
-  const lien = reponse.search_metadata?.google_flights_url ?? lienGoogle(sens, adultes);
+  const lien = reponse.search_metadata?.google_flights_url ?? lienGoogle(q.sens, adultes);
   const resultats = [...(reponse.best_flights ?? []), ...(reponse.other_flights ?? [])];
 
   const offres: Offre[] = resultats
     .filter((r): r is ResultatGoogle & { price: number } => typeof r.price === 'number')
-    .map((r) => ({
-      source: 'google' as const,
-      sens,
-      prixParPersonne: arrondi(r.price / diviseur),
-      bagagesParPersonne: 0,
-      vols: r.flights.map((v) => ({
+    .map((r) => {
+      const vols = r.flights.map((v) => ({
         compagnie: v.airline,
         numero: v.flight_number,
         de: v.departure_airport.id,
         vers: v.arrival_airport.id,
         depart: v.departure_airport.time.replace(' ', 'T'),
-      })),
-      lien,
-      observeLe: maintenant.toISOString(),
-    }));
+      }));
+      return {
+        source: 'google' as const,
+        sens: q.sens,
+        prixParPersonne: arrondi(r.price / diviseur),
+        bagagesParPersonne: 0,
+        dansHoraires: dansHoraires(q, vols),
+        requete: cleRequete(q),
+        vols,
+        lien,
+        observeLe: maintenant.toISOString(),
+      };
+    });
 
   const infos = reponse.price_insights;
   const avis: AvisGoogle | null =
-    sens === 'aller-retour' && infos?.price_level
+    q.sens === 'aller-retour' && infos?.price_level
       ? {
           niveau: infos.price_level,
           ...(infos.typical_price_range
@@ -122,17 +159,17 @@ export function convertirGoogle(
 }
 
 export async function chercherGoogle(
-  sens: Sens,
+  q: RequeteGoogle,
   adultes: number,
   cle: string,
   maintenant: Date,
 ): Promise<{ offres: Offre[]; avis: AvisGoogle | null }> {
-  const reponse = await fetch(`https://serpapi.com/search.json?${parametresGoogle(sens, adultes, cle)}`, {
+  const reponse = await fetch(`https://serpapi.com/search.json?${parametresGoogle(q, adultes, cle)}`, {
     signal: AbortSignal.timeout(60_000),
   });
   const json = (await reponse.json()) as ReponseGoogle;
   if (!reponse.ok && !json.error) throw new Error(`SerpApi a répondu ${reponse.status}`);
-  return convertirGoogle(json, sens, adultes, maintenant);
+  return convertirGoogle(json, q, adultes, maintenant);
 }
 
 // Nombre de recherches gratuites restantes ce mois-ci. Cet appel ne consomme pas de recherche.

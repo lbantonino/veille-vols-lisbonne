@@ -12,7 +12,9 @@ if (!cle) {
 console.log(`Recherches restantes avant l'essai : ${await lireQuotaSerpApi(cle)}`);
 
 for (const adultes of [1, 2]) {
-  const reponse = await fetch(`https://serpapi.com/search.json?${parametresGoogle('aller-retour', adultes, cle)}`);
+  const reponse = await fetch(
+    `https://serpapi.com/search.json?${parametresGoogle({ sens: 'aller-retour', horaires: false }, adultes, cle)}`,
+  );
   const json = (await reponse.json()) as ReponseGoogle;
   console.log(`\n${adultes} adulte(s) :`);
   if (json.error) {
