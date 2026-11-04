@@ -39,6 +39,17 @@ let dernierEchec = 0;
 
 const patienter = (ms: number): Promise<void> => new Promise((fin) => setTimeout(fin, ms));
 
+// Le navigateur envoie le code encodé (encodeURIComponent), pour que les accents passent dans l'en-tête.
+function codeRecu(request: Request): string | null {
+  const brut = request.headers.get('x-code-acces');
+  if (brut === null) return null;
+  try {
+    return decodeURIComponent(brut);
+  } catch {
+    return brut;
+  }
+}
+
 // null si le code est bon ; sinon une réponse 401, après une attente qui s'allonge à chaque erreur.
 export async function verifierAcces(
   request: Request,
@@ -48,7 +59,7 @@ export async function verifierAcces(
   const maintenant = Date.now();
   if (maintenant - dernierEchec > OUBLI_APRES_MS) echecs = 0;
 
-  if (codeValide(request.headers.get('x-code-acces'), env.CODE_ACCES)) {
+  if (codeValide(codeRecu(request), env.CODE_ACCES)) {
     echecs = 0;
     return null;
   }

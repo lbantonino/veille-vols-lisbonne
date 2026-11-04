@@ -43,6 +43,8 @@ Variables à mettre dans Vercel (*Settings → Environments → Production*), en
 
 Pour travailler sur la page en local : `npm run site`, puis http://localhost:4317 (avec un code d'essai local affiché au démarrage).
 
+Le robot de l'agent enregistre `data/` toutes les heures : avant d'envoyer du code, récupérer ses commits avec `git pull --rebase` (ou une fois pour toutes : `git config pull.rebase true`). Vercel ne redéploie pas pour un commit de données seules, mais déploie toujours un commit de code ou une fusion.
+
 ## Comment ça marche
 
 ```

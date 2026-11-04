@@ -9,6 +9,7 @@ import {
   momentJournal,
   pointMinimum,
   texteAge,
+  texteDernierPassage,
 } from './rendu.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -158,7 +159,7 @@ export function afficherNotes(notes) {
     `Bruxelles → Lisbonne · aller ${dateVoyage(notes.voyage.aller)}, retour ${dateVoyage(notes.voyage.retour)} · ${notes.voyage.horaires}`;
   const statut = document.getElementById('statut');
   statut.textContent = notes.dernierPassage
-    ? `Dernier passage de l'agent : ${heureBruxelles(notes.dernierPassage)}${notes.prochainPassage ? ` · prochain vers ${heureBruxelles(notes.prochainPassage)}` : ''}`
+    ? `Dernier passage de l'agent : ${texteDernierPassage(notes.dernierPassage, new Date())}${notes.prochainPassage ? ` · prochain vers ${heureBruxelles(notes.prochainPassage)}` : ''}`
     : "L'agent n'est pas encore passé";
   statut.hidden = false;
 

@@ -1,4 +1,5 @@
-// Appels aux fonctions serveur, avec le code d'accès d'Antonino (gardé dans ce navigateur).
+// Appels aux fonctions serveur, avec ton code d'accès (gardé dans ce navigateur).
+// Le code part encodé (encodeURIComponent) : les accents et symboles passent sans souci.
 const CLE = 'lisbonia-code';
 let codeEnMemoire = null; // si le navigateur refuse localStorage (navigation privée)
 let surRefus = () => {};
@@ -40,7 +41,7 @@ export function quandCodeRefuse(fonction) {
  * @param {{ methode?: 'GET' | 'POST', corps?: unknown }} [options]
  */
 export async function appeler(chemin, { methode = 'GET', corps } = {}) {
-  const entetes = { 'x-code-acces': obtenirCode() ?? '' };
+  const entetes = { 'x-code-acces': encodeURIComponent(obtenirCode() ?? '') };
   if (corps !== undefined) entetes['content-type'] = 'application/json';
   const reponse = await fetch(chemin, {
     method: methode,

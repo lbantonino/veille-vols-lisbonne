@@ -20,3 +20,12 @@ test('code : chaque échec rallonge l’attente, jusqu’à 8 secondes', () => {
   assert.equal(delaiApresEchecs(3), 4000);
   assert.equal(delaiApresEchecs(10), 8000);
 });
+
+test('code avec des accents : envoyé encodé par le navigateur, accepté', async () => {
+  const { verifierAcces } = await import('../../src/robot/http.ts');
+  const env = { CODE_ACCES: 'café-été-2027 €' };
+  const requete = new Request('http://local/api/notes', { headers: { 'x-code-acces': encodeURIComponent('café-été-2027 €') } });
+  assert.equal(await verifierAcces(requete, env, { attendre: async () => {} }), null);
+  const malForme = new Request('http://local/api/notes', { headers: { 'x-code-acces': '%E0%A4%A' } });
+  assert.equal((await verifierAcces(malForme, env, { attendre: async () => {} }))?.status, 401);
+});

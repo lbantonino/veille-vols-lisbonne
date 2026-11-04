@@ -14,7 +14,7 @@ export function formaterPrix(n) {
   return EUROS.format(n);
 }
 
-/** "2026-11-04T21:17:00Z" -> "22h17" (heure de Bruxelles) @param {string} iso */
+/** "2030-01-04T21:17:00Z" -> "22h17" (heure de Bruxelles) @param {string} iso */
 export function heureBruxelles(iso) {
   const parties = HEURE_BRUXELLES.formatToParts(new Date(iso));
   const h = parties.find((p) => p.type === 'hour')?.value ?? '00';
@@ -33,7 +33,7 @@ export function texteAge(iso, maintenant) {
   return `il y a ${Math.floor(heures / 24)} j`;
 }
 
-/** "2027-03-05T08:10:00" -> "ven 08:10" (heure locale de l'aéroport, sans conversion) @param {string} depart */
+/** "2030-01-04T08:10:00" -> "ven 08:10" (heure locale de l'aéroport, sans conversion) @param {string} depart */
 function jourEtHeure(depart) {
   const [date = '', heure = ''] = depart.split('T');
   const [a = 0, mo = 1, j = 1] = date.split('-').map(Number);
@@ -134,14 +134,24 @@ function jourMois(format, date) {
   return `${valeur('weekday')} ${valeur('day')} ${valeur('month')}`;
 }
 
-/** "2027-03-05" -> "ven. 5 mars" @param {string} jour */
+/** "2030-01-04" -> "ven. 4 janv." @param {string} jour */
 export function dateVoyage(jour) {
   return jourMois(DATE_UTC, new Date(`${jour}T12:00:00Z`));
 }
 
-/** "2026-11-04T21:17:00Z" -> "mer. 4 nov. · 22h17" (heure de Bruxelles) @param {string} iso */
+/** "2030-01-02T21:17:00Z" -> "mer. 2 janv. · 22h17" (heure de Bruxelles) @param {string} iso */
 export function momentJournal(iso) {
   return `${jourMois(DATE_BRUXELLES, new Date(iso))} · ${heureBruxelles(iso)}`;
+}
+
+const JOUR_BRUXELLES = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Brussels', year: 'numeric', month: '2-digit', day: '2-digit' });
+
+/**
+ * L'heure du dernier passage de l'agent, avec la date si ce n'était pas aujourd'hui (à Bruxelles).
+ * @param {string} iso @param {Date} maintenant
+ */
+export function texteDernierPassage(iso, maintenant) {
+  return JOUR_BRUXELLES.format(new Date(iso)) === JOUR_BRUXELLES.format(maintenant) ? heureBruxelles(iso) : momentJournal(iso);
 }
 
 /**

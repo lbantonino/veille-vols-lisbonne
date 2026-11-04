@@ -1,7 +1,25 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": "site",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':(exclude)data'",
-  "functions": { "api/*.js": { "includeFiles": "src/**" } },
-  "headers": [{ "source": "/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }] }]
+  "ignoreCommand": "git rev-parse -q --verify HEAD^2 >/dev/null && exit 1; git diff --quiet HEAD^ HEAD -- . ':(exclude)data'",
+  "regions": [
+    "cdg1"
+  ],
+  "functions": {
+    "api/*.js": {
+      "includeFiles": "src/**",
+      "maxDuration": 60
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    }
+  ]
 }

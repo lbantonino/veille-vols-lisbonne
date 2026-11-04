@@ -12,6 +12,7 @@ import {
   momentJournal,
   pointMinimum,
   texteAge,
+  texteDernierPassage,
 } from '../../site/js/rendu.js';
 import type { Etat, Option } from '../../src/types.ts';
 
@@ -101,4 +102,10 @@ test('dates en clair', () => {
   assert.equal(dateVoyage('2027-03-05'), 'ven. 5 mars');
   assert.equal(dateVoyage('2027-03-08'), 'lun. 8 mars');
   assert.equal(momentJournal('2026-11-04T21:17:00Z'), 'mer. 4 nov. · 22h17');
+});
+
+test('dernier passage : l’heure seule aujourd’hui, avec la date sinon', () => {
+  const maintenant = new Date('2026-11-04T22:30:00Z'); // 23h30 à Bruxelles
+  assert.equal(texteDernierPassage('2026-11-04T21:17:00Z', maintenant), '22h17');
+  assert.equal(texteDernierPassage('2026-11-02T21:17:00Z', maintenant), 'lun. 2 nov. · 22h17');
 });

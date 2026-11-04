@@ -2,7 +2,7 @@
 // regarde Google Flights (sans l'appeler), compare, annonce le résultat et retourne se coucher.
 // Chaque étape affichée correspond à une vraie opération.
 import { appeler } from './api.js';
-import { conclusion, heureBruxelles, lignesEcran, texteAge } from './rendu.js';
+import { conclusion, heureBruxelles, lignesEcran, texteAge, texteDernierPassage } from './rendu.js';
 import { afficherNotes, contenuCourbe } from './notes.js';
 
 const LIBELLE_MIN_MS = 1200; // le temps de lire chaque étape
@@ -22,7 +22,7 @@ async function pendant(scene, texte, promesse) {
 function phraseDeRepos(notes) {
   if (!notes?.dernierPassage) return 'Zzz…';
   const prochain = notes.prochainPassage ? ` · prochain vers ${heureBruxelles(notes.prochainPassage)}` : '';
-  return `Zzz… Dernier passage de l'agent : ${heureBruxelles(notes.dernierPassage)}${prochain}`;
+  return `Zzz… Dernier passage de l'agent : ${texteDernierPassage(notes.dernierPassage, new Date())}${prochain}`;
 }
 
 async function retourAuLit(scene, notes) {
@@ -54,7 +54,7 @@ async function deroulerVisite(scene) {
   scene.allumer('courbe', contenuCourbe(notes));
 
   if (notes.termine) {
-    await scene.dire('Je suis en vacances. Bon semi-marathon et joyeux anniversaire !');
+    await scene.dire('Je suis en vacances. Bon voyage et bonne course !');
     await attendre(CONCLUSION_MS);
     await retourAuLit(scene, notes);
     return;
