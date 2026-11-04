@@ -1,0 +1,21 @@
+{
+  "name": "veille-vols-lisbonne",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Agent qui surveille les prix des vols Bruxelles - Lisbonne et prévient sur Telegram",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "veille": "node --env-file-if-exists=.env src/main.ts",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc",
+    "telegram:id": "node --env-file-if-exists=.env src/outils/telegram-chat-id.ts",
+    "essai:google": "node --env-file-if-exists=.env src/outils/essai-google.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2"
+  }
+}
