@@ -34,6 +34,7 @@ export interface Resume {
 const TAILLE_JOURNAL = 10;
 const POINTS_MAX = 240;
 const ECART_MAX_MS = 75 * 60_000;
+const ECART_MIN_MS = 45 * 60_000; // en dessous, ce sont des lancements manuels, pas le rythme horaire
 
 const baisse = (avant: number | null, apres: number | null): boolean => avant !== null && apres !== null && apres < avant;
 
@@ -75,11 +76,16 @@ function courbe(historique: LigneHistorique[]): PointCourbe[] {
   return points;
 }
 
-// Les passages automatiques sont réguliers si les 3 derniers sont rapprochés et le dernier récent.
+// Les passages automatiques sont réguliers si les 3 derniers sont espacés d'environ une heure
+// (entre 45 et 75 minutes) et que le dernier est récent.
 export function passagesReguliers(historique: LigneHistorique[], maintenant: Date): boolean {
   const derniers = historique.slice(-3).map((l) => new Date(l.le).getTime());
   if (derniers.length < 3) return false;
-  const ecartsOk = derniers.every((t, i) => i === 0 || t - derniers[i - 1]! <= ECART_MAX_MS);
+  const ecartsOk = derniers.every((t, i) => {
+    if (i === 0) return true;
+    const ecart = t - derniers[i - 1]!;
+    return ecart >= ECART_MIN_MS && ecart <= ECART_MAX_MS;
+  });
   return ecartsOk && maintenant.getTime() - derniers[derniers.length - 1]! <= ECART_MAX_MS;
 }
 

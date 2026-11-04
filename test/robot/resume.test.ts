@@ -59,6 +59,11 @@ test('passages réguliers : trois passages rapprochés et récents', () => {
   assert.equal(passagesReguliers(reguliers, new Date('2026-11-05T01:00:00Z')), false);
 });
 
+test('passages réguliers : des lancements manuels rapprochés ne comptent pas', () => {
+  const manuels = [ligne('2026-11-04T20:21:51Z'), ligne('2026-11-04T20:25:33Z'), ligne('2026-11-04T20:29:21Z')];
+  assert.equal(passagesReguliers(manuels, new Date('2026-11-04T20:40:00Z')), false);
+});
+
 test('prochain passage : la prochaine heure pile + 17 minutes, en UTC', () => {
   assert.equal(prochainPassage(new Date('2026-11-04T22:40:00Z')), '2026-11-04T23:17:00.000Z');
   assert.equal(prochainPassage(new Date('2026-11-04T22:10:00Z')), '2026-11-04T22:17:00.000Z');

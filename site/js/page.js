@@ -1,7 +1,51 @@
 // Point d'entrée de la page.
 import { creerScene } from './scene.js';
+import { memoriserCode, obtenirCode, quandCodeRefuse } from './api.js';
+import { lancerVisite } from './visite.js';
+import { masquerNotes } from './notes.js';
+
+const RETOUR_APRES_MS = 10 * 60_000;
 
 const scene = creerScene(/** @type {HTMLElement} */ (document.querySelector('.bureau')));
+const formulaire = /** @type {HTMLFormElement} */ (document.getElementById('acces'));
+const champ = /** @type {HTMLInputElement} */ (document.getElementById('code'));
+const erreur = document.getElementById('acces-erreur');
+
+function demanderCode(apresErreur) {
+  masquerNotes();
+  scene.eteindreEcrans();
+  scene.passerA('dort');
+  scene.dire(apresErreur ? 'Zzz… Ce code ne me réveille pas.' : 'Zzz… Donne-moi ton code pour me réveiller.');
+  erreur.hidden = !apresErreur;
+  formulaire.hidden = false;
+  champ.value = '';
+}
+
+quandCodeRefuse(() => demanderCode(true));
+
+formulaire.addEventListener('submit', (evenement) => {
+  evenement.preventDefault();
+  const code = champ.value.trim();
+  if (code.length < 12) {
+    erreur.hidden = false;
+    return;
+  }
+  memoriserCode(code);
+  formulaire.hidden = true;
+  erreur.hidden = true;
+  lancerVisite(scene);
+});
+
+// Retour sur l'onglet après au moins 10 minutes : nouvelle visite.
+let cacheLe = null;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    cacheLe = Date.now();
+    return;
+  }
+  if (cacheLe !== null && Date.now() - cacheLe >= RETOUR_APRES_MS && obtenirCode()) lancerVisite(scene);
+  cacheLe = null;
+});
 
 // Développement : ?etat=travail ou ?etat=dort fige la scène, avec des lignes d'exemple
 // (aucune donnée réelle, la page reste vide de tout renseignement personnel).
@@ -28,6 +72,10 @@ if (etatFige === 'travail' || etatFige === 'dort') {
     scene.eteindreEcrans();
     await scene.dire('Zzz…');
   }
+} else if (obtenirCode()) {
+  lancerVisite(scene);
+} else {
+  demanderCode(false);
 }
 
 export { scene };

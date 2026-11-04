@@ -61,17 +61,33 @@ export function lignesEcran(offres) {
 }
 
 /**
- * Tracé SVG d'une série de prix ; une valeur absente coupe la ligne.
- * Le prix le plus haut est en haut, le plus bas en bas.
- * @param {(number | null)[]} valeurs @param {number} largeur @param {number} hauteur
+ * Plus petit et plus grand prix de plusieurs séries, pour les tracer sur la même échelle.
+ * @param {(number | null)[][]} series @returns {{ min: number, max: number } | null}
  */
-export function cheminCourbe(valeurs, largeur, hauteur) {
-  const nombres = valeurs.filter((v) => v !== null);
-  if (nombres.length === 0) return '';
-  const min = Math.min(...nombres);
-  const max = Math.max(...nombres);
+export function bornesCommunes(series) {
+  const nombres = series.flat().filter((v) => v !== null);
+  return nombres.length ? { min: Math.min(...nombres), max: Math.max(...nombres) } : null;
+}
+
+/** @param {(number | null)[]} valeurs @param {number} largeur @param {number} hauteur @param {{ min: number, max: number }} bornes */
+function placeur(valeurs, largeur, hauteur, bornes) {
   const pasX = valeurs.length > 1 ? largeur / (valeurs.length - 1) : 0;
-  const y = (v) => (max === min ? hauteur / 2 : hauteur - ((v - min) / (max - min)) * hauteur);
+  return {
+    x: (i) => (valeurs.length > 1 ? i * pasX : largeur / 2),
+    y: (v) => (bornes.max === bornes.min ? hauteur / 2 : hauteur - ((v - bornes.min) / (bornes.max - bornes.min)) * hauteur),
+  };
+}
+
+/**
+ * Tracé SVG d'une série de prix ; une valeur absente coupe la ligne.
+ * Le prix le plus haut est en haut, le plus bas en bas. Sans bornes, la série a sa propre échelle.
+ * @param {(number | null)[]} valeurs @param {number} largeur @param {number} hauteur
+ * @param {{ min: number, max: number } | null} [bornes]
+ */
+export function cheminCourbe(valeurs, largeur, hauteur, bornes = null) {
+  const echelle = bornes ?? bornesCommunes([valeurs]);
+  if (!echelle || valeurs.every((v) => v === null)) return '';
+  const { x, y } = placeur(valeurs, largeur, hauteur, echelle);
   let d = '';
   let enCours = false;
   valeurs.forEach((v, i) => {
@@ -79,11 +95,53 @@ export function cheminCourbe(valeurs, largeur, hauteur) {
       enCours = false;
       return;
     }
-    const x = valeurs.length > 1 ? i * pasX : largeur / 2;
-    d += `${enCours ? 'L' : 'M'}${x.toFixed(1)} ${y(v).toFixed(1)} `;
+    d += `${enCours ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)} `;
     enCours = true;
   });
   return d.trim();
+}
+
+/**
+ * Position du prix le plus bas d'une série (le record), sur la même échelle que sa courbe.
+ * @param {(number | null)[]} valeurs @param {number} largeur @param {number} hauteur
+ * @param {{ min: number, max: number } | null} bornes
+ * @returns {{ x: number, y: number, valeur: number } | null}
+ */
+export function pointMinimum(valeurs, largeur, hauteur, bornes) {
+  if (!bornes) return null;
+  let indice = -1;
+  valeurs.forEach((v, i) => {
+    if (v !== null && (indice === -1 || v < /** @type {number} */ (valeurs[indice]))) indice = i;
+  });
+  if (indice === -1) return null;
+  const valeur = /** @type {number} */ (valeurs[indice]);
+  const { x, y } = placeur(valeurs, largeur, hauteur, bornes);
+  return { x: x(indice), y: y(valeur), valeur };
+}
+
+const DATE_UTC = new Intl.DateTimeFormat('fr-BE', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
+const DATE_BRUXELLES = new Intl.DateTimeFormat('fr-BE', {
+  timeZone: 'Europe/Brussels',
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
+
+/** @param {Intl.DateTimeFormat} format @param {Date} date */
+function jourMois(format, date) {
+  const parties = format.formatToParts(date);
+  const valeur = (type) => parties.find((p) => p.type === type)?.value ?? '';
+  return `${valeur('weekday')} ${valeur('day')} ${valeur('month')}`;
+}
+
+/** "2027-03-05" -> "ven. 5 mars" @param {string} jour */
+export function dateVoyage(jour) {
+  return jourMois(DATE_UTC, new Date(`${jour}T12:00:00Z`));
+}
+
+/** "2026-11-04T21:17:00Z" -> "mer. 4 nov. · 22h17" (heure de Bruxelles) @param {string} iso */
+export function momentJournal(iso) {
+  return `${jourMois(DATE_BRUXELLES, new Date(iso))} · ${heureBruxelles(iso)}`;
 }
 
 /**

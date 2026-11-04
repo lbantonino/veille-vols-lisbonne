@@ -349,6 +349,74 @@ body {
 .bloc-titre { margin: 0; font: 600 1.2rem/1.2 var(--display); }
 .bloc-sous { margin: 2px 0 12px; color: var(--texte-doux); font-size: 0.9rem; }
 
+@media (min-width: 860px) {
+  .notes { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .meilleurs, .evolution { grid-column: 1 / -1; }
+}
+
+/* Les records */
+.records { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 12px; }
+.record {
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--carte-haute);
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+.record-titre { margin: 0; font: 600 0.78rem var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--lueur); }
+.record-prix { margin: 0; font: 600 2rem/1.1 var(--display); color: var(--accent); font-variant-numeric: tabular-nums; }
+.record-sous { margin: 0 0 6px; font-size: 0.85rem; color: var(--texte-doux); }
+.record-vide { margin: 0; color: var(--texte-doux); }
+.record-vols { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.record-vols li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; font: 400 0.9rem var(--mono); }
+.record-trajet { color: var(--texte-doux); font-family: var(--corps); }
+.record-note { color: var(--texte-doux); font-family: var(--corps) !important; font-size: 0.85rem !important; }
+.record-liens { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.lien { color: var(--lueur); font-weight: 600; text-underline-offset: 3px; }
+.lien:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* La grande courbe */
+.courbe-cadre { overflow-x: auto; }
+.courbe-grande { display: block; width: 100%; height: auto; }
+.courbe-grille line { stroke: var(--trait); stroke-width: 1; }
+.courbe-grande .courbe-horaires { fill: none; stroke: var(--lueur); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.courbe-grande .courbe-tous { fill: none; stroke: var(--coque-ombre); stroke-opacity: 0.6; stroke-width: 1.6; stroke-dasharray: 5 4; }
+.courbe-record-horaires { fill: var(--accent); }
+.courbe-record-tous { fill: var(--coque-ombre); }
+.courbe-etiquette { font: 600 15px var(--mono); fill: var(--texte); }
+@media (max-width: 719px) {
+  .courbe-etiquette { font-size: 22px; }
+}
+.courbe-etiquette-horaires { fill: var(--accent); }
+.courbe-vide { font: 400 14px var(--corps); fill: var(--texte-doux); }
+.legende { margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.85rem; color: var(--texte-doux); }
+.legende-item { display: inline-flex; align-items: center; gap: 8px; }
+.legende-item::before { content: ''; width: 18px; height: 0; border-top: 2.5px solid var(--lueur); }
+.legende-tous::before { border-top: 2px dashed var(--coque-ombre); }
+
+/* Le journal */
+.journal-liste { list-style: none; margin: 12px 0 0; padding: 0; display: grid; }
+.journal-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  padding-block: 10px;
+  border-top: 1px solid var(--trait);
+  font-variant-numeric: tabular-nums;
+}
+.journal-ligne:first-child { border-top: 0; }
+.journal-moment { color: var(--texte-doux); font-size: 0.9rem; }
+.journal-prix { display: inline-flex; gap: 12px; font: 600 0.92rem var(--mono); }
+.journal-tous { color: var(--texte-doux); font-weight: 400; }
+.journal-etiquettes { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.journal-etiquettes:empty { display: none; }
+.journal-vide { color: var(--texte-doux); padding-top: 8px; }
+.pastille { font: 600 0.72rem var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+.pastille-record { background: rgba(255, 201, 96, 0.16); color: var(--accent); }
+.pastille-panne { background: rgba(255, 154, 133, 0.14); color: var(--alerte); }
+
 .pied { color: var(--texte-doux); font-size: 0.85rem; text-align: center; }
 .pied p { margin: 0; }
 

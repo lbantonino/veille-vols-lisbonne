@@ -1,7 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cheminCourbe, conclusion, formaterPrix, heureBruxelles, lignesEcran, texteAge } from '../../site/js/rendu.js';
+import {
+  bornesCommunes,
+  cheminCourbe,
+  conclusion,
+  dateVoyage,
+  formaterPrix,
+  heureBruxelles,
+  lignesEcran,
+  momentJournal,
+  pointMinimum,
+  texteAge,
+} from '../../site/js/rendu.js';
 import type { Etat, Option } from '../../src/types.ts';
 
 const etat = JSON.parse(readFileSync(new URL('../fixtures/etat-exemple.json', import.meta.url), 'utf8')) as Etat;
@@ -73,4 +84,21 @@ test('conclusion : pas de nouveau record', () => {
 
 test('conclusion : comparaison impossible', () => {
   assert.equal(conclusion(null, false), "Je n'ai pas pu comparer cette fois-ci. Je réessaierai au prochain passage.");
+});
+
+test('courbes comparables : une échelle commune aux deux séries', () => {
+  assert.deepEqual(bornesCommunes([[3, null, 1], [5, 2]]), { min: 1, max: 5 });
+  assert.equal(bornesCommunes([[null], []]), null);
+  assert.equal(cheminCourbe([10, 20], 100, 50, { min: 0, max: 20 }), 'M0.0 25.0 L100.0 0.0');
+});
+
+test('le record est repéré sur la courbe', () => {
+  assert.deepEqual(pointMinimum([3, 1, 2], 100, 50, { min: 1, max: 3 }), { x: 50, y: 50, valeur: 1 });
+  assert.equal(pointMinimum([null, null], 100, 50, null), null);
+});
+
+test('dates en clair', () => {
+  assert.equal(dateVoyage('2027-03-05'), 'ven. 5 mars');
+  assert.equal(dateVoyage('2027-03-08'), 'lun. 8 mars');
+  assert.equal(momentJournal('2026-11-04T21:17:00Z'), 'mer. 4 nov. · 22h17');
 });
