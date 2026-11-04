@@ -11,7 +11,37 @@ Un agent qui surveille tout seul le prix des vols entre Bruxelles et Lisbonne po
 - **Le vrai prix** : billet et valise de 10 kg compris, affiché par personne pour 2 adultes.
 - **Places pour deux** : il compare le prix pour 1 personne et pour 2, et signale quand il ne reste sans doute qu'une place au prix le plus bas.
 - **Des alertes utiles** : nouveau record dans mes horaires, nouveau record hors horaires (marqué ⏰), prix jugé bas par Google, prix cible atteint, source en panne. Le silence veut dire que tout va bien.
+- **Me dit quand il travaille** : de 8h à 22h, un petit message Telegram silencieux à chaque passage, avec le lien pour venir le voir. Rien la nuit.
 - **S'arrête tout seul** le jour du départ.
+
+## La page du robot : LisbonIA
+
+Une page web où l'on voit l'agent travailler sous la forme d'un robot, **LisbonIA**, à son bureau, au milieu des pages de prix qu'il surveille.
+
+- Quand je l'ouvre, il se réveille dans son lit, va à son bureau, relit ses notes, **vérifie Ryanair en direct**, regarde les dernières offres Google Flights, compare avec ses records, annonce le résultat, puis retourne se coucher. Chaque étape affichée correspond à une vraie opération.
+- Dessous : ses records (dans mes horaires et tous horaires) avec les liens de réservation, la courbe des prix et le journal de ses derniers passages.
+- Protégée par un code d'accès : sans lui, la page ne montre que le robot endormi.
+- Lisible sur téléphone comme sur ordinateur.
+- La page ne lance jamais l'agent, n'interroge jamais Google et n'envoie aucune alerte : elle regarde, elle ne fait rien d'autre.
+
+Elle est hébergée sur **Vercel** (formule gratuite), à partir de ce même dépôt :
+
+```
+site/                 la page (HTML, CSS, JavaScript sans framework)
+├── js/scene.js       la scène animée du robot
+├── js/visite.js      le déroulé d'une visite
+├── js/notes.js       records, courbe et journal
+└── js/rendu.js       fonctions d'affichage (testées)
+api/*.js              les fonctions Vercel, qui appellent src/robot/
+src/robot/            code d'accès, lecture des notes de l'agent, Ryanair en direct, comparaison
+```
+
+Variables à mettre dans Vercel (*Settings → Environments → Production*), en « Secret » :
+
+- `CODE_ACCES` : le code de la page, 12 caractères au moins ;
+- `GITHUB_TOKEN` : un jeton GitHub « fine-grained », limité à ce dépôt, avec **Contents en lecture seule**. Il sert à lire `data/`, qui est privé.
+
+Pour travailler sur la page en local : `npm run site`, puis http://localhost:4317 (avec un code d'essai local affiché au démarrage).
 
 ## Comment ça marche
 
@@ -35,6 +65,7 @@ Après chaque passage, GitHub enregistre `data/` dans le dépôt : l'historique 
 |---|---|---|
 | SerpApi (Google Flights) | 250 recherches par mois, sans carte bancaire | 186 au maximum, jamais sous une réserve de 15 |
 | GitHub Actions (dépôt privé) | 2 000 minutes par mois | environ 744 |
+| Vercel (la page du robot) | formule Hobby | quelques appels par visite |
 | Ryanair, Telegram | gratuits | sans limite connue |
 
 ## Installation
@@ -51,12 +82,12 @@ Sans Telegram configuré, l'agent tourne en mode essai et affiche les messages a
 
 ## Réglages
 
-Tout se trouve dans [`src/config.ts`](src/config.ts) : dates, horaires préférés, aéroports, nombre d'adultes, prix de la valise Ryanair, prix cible, fréquence de Google Flights.
+Tout se trouve dans [`src/config.ts`](src/config.ts) : dates, horaires préférés, aéroports, nombre d'adultes, prix de la valise Ryanair, prix cible, fréquence de Google Flights, heures des messages « au travail » et adresse de la page.
 
 ## Tests
 
 ```bash
-npm test          # 24 tests
+npm test          # 71 tests
 npm run typecheck # vérification TypeScript
 ```
 
@@ -68,4 +99,4 @@ npm run typecheck # vérification TypeScript
 
 ## Stack
 
-TypeScript exécuté directement par Node 24 (sans compilation), aucune dépendance à l'exécution, tests avec `node:test`, GitHub Actions, API Telegram, SerpApi.
+TypeScript exécuté directement par Node 24 (sans compilation), aucune dépendance à l'exécution, tests avec `node:test`, GitHub Actions, API Telegram, SerpApi, Vercel. La page : HTML, CSS et JavaScript sans framework, scène en SVG animée en CSS.
