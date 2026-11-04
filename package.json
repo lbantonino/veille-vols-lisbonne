@@ -12,7 +12,8 @@
     "test": "node --test \"test/**/*.test.ts\"",
     "typecheck": "tsc",
     "telegram:id": "node --env-file-if-exists=.env src/outils/telegram-chat-id.ts",
-    "essai:google": "node --env-file-if-exists=.env src/outils/essai-google.ts"
+    "essai:google": "node --env-file-if-exists=.env src/outils/essai-google.ts",
+    "site": "node --env-file-if-exists=.env src/outils/serveur-local.ts"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
