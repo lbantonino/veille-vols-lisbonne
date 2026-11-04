@@ -2,7 +2,7 @@ name: Veille des prix Lisbonne
 
 on:
   schedule:
-    - cron: '17 * * * *' # toutes les heures, à la 17e minute (heure UTC)
+    - cron: '17 * * * *' # chaque heure, à la minute 17 (heure UTC) ; même valeur que passage.minuteUtc dans src/config.ts
   workflow_dispatch: # bouton « Run workflow » pour lancer un passage à la main
 
 permissions:
