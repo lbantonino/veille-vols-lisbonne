@@ -257,78 +257,6 @@
       "observeLe": "2026-11-05T00:56:26.639Z"
     },
     {
-      "source": "ryanair",
-      "sens": "aller",
-      "prixParPersonne": 102.27,
-      "bagagesParPersonne": 36,
-      "dansHoraires": false,
-      "vols": [
-        {
-          "compagnie": "Ryanair",
-          "numero": "FR1300",
-          "de": "CRL",
-          "vers": "LIS",
-          "depart": "2027-03-05T15:35:00"
-        }
-      ],
-      "lien": "https://www.ryanair.com/be/fr/trip/flights/select?adults=2&teens=0&children=0&infants=0&dateOut=2027-03-05&dateIn=&isConnectedFlight=false&discount=0&promoCode=&isReturn=false&originIata=CRL&destinationIata=LIS",
-      "observeLe": "2026-11-05T07:56:49.340Z"
-    },
-    {
-      "source": "ryanair",
-      "sens": "retour",
-      "prixParPersonne": 128.99,
-      "bagagesParPersonne": 36,
-      "dansHoraires": false,
-      "vols": [
-        {
-          "compagnie": "Ryanair",
-          "numero": "FR1301",
-          "de": "LIS",
-          "vers": "CRL",
-          "depart": "2027-03-08T10:00:00"
-        }
-      ],
-      "lien": "https://www.ryanair.com/be/fr/trip/flights/select?adults=2&teens=0&children=0&infants=0&dateOut=2027-03-08&dateIn=&isConnectedFlight=false&discount=0&promoCode=&isReturn=false&originIata=LIS&destinationIata=CRL",
-      "observeLe": "2026-11-05T07:56:49.340Z"
-    },
-    {
-      "source": "ryanair",
-      "sens": "aller",
-      "prixParPersonne": 153.99,
-      "bagagesParPersonne": 36,
-      "dansHoraires": true,
-      "vols": [
-        {
-          "compagnie": "Ryanair",
-          "numero": "FR3610",
-          "de": "CRL",
-          "vers": "LIS",
-          "depart": "2027-03-05T08:10:00"
-        }
-      ],
-      "lien": "https://www.ryanair.com/be/fr/trip/flights/select?adults=2&teens=0&children=0&infants=0&dateOut=2027-03-05&dateIn=&isConnectedFlight=false&discount=0&promoCode=&isReturn=false&originIata=CRL&destinationIata=LIS",
-      "observeLe": "2026-11-05T07:56:49.340Z"
-    },
-    {
-      "source": "ryanair",
-      "sens": "retour",
-      "prixParPersonne": 184.43,
-      "bagagesParPersonne": 36,
-      "dansHoraires": true,
-      "vols": [
-        {
-          "compagnie": "Ryanair",
-          "numero": "FR3609",
-          "de": "LIS",
-          "vers": "CRL",
-          "depart": "2027-03-08T17:05:00"
-        }
-      ],
-      "lien": "https://www.ryanair.com/be/fr/trip/flights/select?adults=2&teens=0&children=0&infants=0&dateOut=2027-03-08&dateIn=&isConnectedFlight=false&discount=0&promoCode=&isReturn=false&originIata=LIS&destinationIata=CRL",
-      "observeLe": "2026-11-05T07:56:49.340Z"
-    },
-    {
       "source": "google",
       "sens": "aller",
       "prixParPersonne": 102.5,
@@ -441,6 +369,192 @@
       ],
       "lien": "https://www.google.com/travel/flights?hl=fr&gl=be&curr=EUR&tfs=CBwQAhopEgoyMDI3LTAzLTA1KABqBwgBEgNDUkxqBwgBEgNCUlVyBwgBEgNMSVNAAUABSAFqAhACcAGYAQI&tfu=EgIIAQ",
       "observeLe": "2026-11-05T07:56:49.340Z"
+    },
+    {
+      "source": "ryanair",
+      "sens": "aller",
+      "prixParPersonne": 102.27,
+      "bagagesParPersonne": 36,
+      "dansHoraires": false,
+      "vols": [
+        {
+          "compagnie": "Ryanair",
+          "numero": "FR1300",
+          "de": "CRL",
+          "vers": "LIS",
+          "depart": "2027-03-05T15:35:00"
+        }
+      ],
+      "lien": "https://www.ryanair.com/be/fr/trip/flights/select?adults=2&teens=0&children=0&infants=0&dateOut=2027-03-05&dateIn=&isConnectedFlight=false&discount=0&promoCode=&isReturn=false&originIata=CRL&destinationIata=LIS",
+      "observeLe": "2026-11-05T16:30:33.092Z"
+    },
+    {
+      "source": "ryanair",
+      "sens": "retour",
+      "prixParPersonne": 126.99,
+      "bagagesParPersonne": 36,
+      "dansHoraires": false,
+      "vols": [
+        {
+          "compagnie": "Ryanair",
+          "numero": "FR1301",
+          "de": "LIS",
+          "vers": "CRL",
+          "depart": "2027-03-08T10:00:00"
+        }
+      ],
+      "lien": "https://www.ryanair.com/be/fr/trip/flights/select?adults=2&teens=0&children=0&infants=0&dateOut=2027-03-08&dateIn=&isConnectedFlight=false&discount=0&promoCode=&isReturn=false&originIata=LIS&destinationIata=CRL",
+      "observeLe": "2026-11-05T16:30:33.092Z"
+    },
+    {
+      "source": "ryanair",
+      "sens": "aller",
+      "prixParPersonne": 151.99,
+      "bagagesParPersonne": 36,
+      "dansHoraires": true,
+      "vols": [
+        {
+          "compagnie": "Ryanair",
+          "numero": "FR3610",
+          "de": "CRL",
+          "vers": "LIS",
+          "depart": "2027-03-05T08:10:00"
+        }
+      ],
+      "lien": "https://www.ryanair.com/be/fr/trip/flights/select?adults=2&teens=0&children=0&infants=0&dateOut=2027-03-05&dateIn=&isConnectedFlight=false&discount=0&promoCode=&isReturn=false&originIata=CRL&destinationIata=LIS",
+      "observeLe": "2026-11-05T16:30:33.092Z"
+    },
+    {
+      "source": "ryanair",
+      "sens": "retour",
+      "prixParPersonne": 184.43,
+      "bagagesParPersonne": 36,
+      "dansHoraires": true,
+      "vols": [
+        {
+          "compagnie": "Ryanair",
+          "numero": "FR3609",
+          "de": "LIS",
+          "vers": "CRL",
+          "depart": "2027-03-08T17:05:00"
+        }
+      ],
+      "lien": "https://www.ryanair.com/be/fr/trip/flights/select?adults=2&teens=0&children=0&infants=0&dateOut=2027-03-08&dateIn=&isConnectedFlight=false&discount=0&promoCode=&isReturn=false&originIata=LIS&destinationIata=CRL",
+      "observeLe": "2026-11-05T16:30:33.092Z"
+    },
+    {
+      "source": "google",
+      "sens": "retour",
+      "prixParPersonne": 99.5,
+      "bagagesParPersonne": 0,
+      "dansHoraires": false,
+      "requete": "google:retour",
+      "vols": [
+        {
+          "compagnie": "Tap Air Portugal",
+          "numero": "TP 640",
+          "de": "LIS",
+          "vers": "BRU",
+          "depart": "2027-03-08T07:05"
+        }
+      ],
+      "lien": "https://www.google.com/travel/flights?hl=fr&gl=be&curr=EUR&tfs=CBwQAhopEgoyMDI3LTAzLTA4KABqBwgBEgNMSVNyBwgBEgNDUkxyBwgBEgNCUlVAAUABSAFqAhACcAGYAQI&tfu=EgIIAQ",
+      "observeLe": "2026-11-05T16:30:33.092Z"
+    },
+    {
+      "source": "google",
+      "sens": "retour",
+      "prixParPersonne": 110.5,
+      "bagagesParPersonne": 0,
+      "dansHoraires": true,
+      "requete": "google:retour",
+      "vols": [
+        {
+          "compagnie": "Tap Air Portugal",
+          "numero": "TP 646",
+          "de": "LIS",
+          "vers": "BRU",
+          "depart": "2027-03-08T19:55"
+        }
+      ],
+      "lien": "https://www.google.com/travel/flights?hl=fr&gl=be&curr=EUR&tfs=CBwQAhopEgoyMDI3LTAzLTA4KABqBwgBEgNMSVNyBwgBEgNDUkxyBwgBEgNCUlVAAUABSAFqAhACcAGYAQI&tfu=EgIIAQ",
+      "observeLe": "2026-11-05T16:30:33.092Z"
+    },
+    {
+      "source": "google",
+      "sens": "retour",
+      "prixParPersonne": 121.5,
+      "bagagesParPersonne": 0,
+      "dansHoraires": false,
+      "requete": "google:retour",
+      "vols": [
+        {
+          "compagnie": "Tap Air Portugal",
+          "numero": "TP 644",
+          "de": "LIS",
+          "vers": "BRU",
+          "depart": "2027-03-08T13:10"
+        }
+      ],
+      "lien": "https://www.google.com/travel/flights?hl=fr&gl=be&curr=EUR&tfs=CBwQAhopEgoyMDI3LTAzLTA4KABqBwgBEgNMSVNyBwgBEgNDUkxyBwgBEgNCUlVAAUABSAFqAhACcAGYAQI&tfu=EgIIAQ",
+      "observeLe": "2026-11-05T16:30:33.092Z"
+    },
+    {
+      "source": "google",
+      "sens": "retour",
+      "prixParPersonne": 129,
+      "bagagesParPersonne": 0,
+      "dansHoraires": false,
+      "requete": "google:retour",
+      "vols": [
+        {
+          "compagnie": "Ryanair",
+          "numero": "FR 1301",
+          "de": "LIS",
+          "vers": "CRL",
+          "depart": "2027-03-08T10:00"
+        }
+      ],
+      "lien": "https://www.google.com/travel/flights?hl=fr&gl=be&curr=EUR&tfs=CBwQAhopEgoyMDI3LTAzLTA4KABqBwgBEgNMSVNyBwgBEgNDUkxyBwgBEgNCUlVAAUABSAFqAhACcAGYAQI&tfu=EgIIAQ",
+      "observeLe": "2026-11-05T16:30:33.092Z"
+    },
+    {
+      "source": "google",
+      "sens": "retour",
+      "prixParPersonne": 150.5,
+      "bagagesParPersonne": 0,
+      "dansHoraires": false,
+      "requete": "google:retour",
+      "vols": [
+        {
+          "compagnie": "Brussels Airlines",
+          "numero": "SN 3816",
+          "de": "LIS",
+          "vers": "BRU",
+          "depart": "2027-03-08T13:40"
+        }
+      ],
+      "lien": "https://www.google.com/travel/flights?hl=fr&gl=be&curr=EUR&tfs=CBwQAhopEgoyMDI3LTAzLTA4KABqBwgBEgNMSVNyBwgBEgNDUkxyBwgBEgNCUlVAAUABSAFqAhACcAGYAQI&tfu=EgIIAQ",
+      "observeLe": "2026-11-05T16:30:33.092Z"
+    },
+    {
+      "source": "google",
+      "sens": "retour",
+      "prixParPersonne": 184.5,
+      "bagagesParPersonne": 0,
+      "dansHoraires": true,
+      "requete": "google:retour",
+      "vols": [
+        {
+          "compagnie": "Ryanair",
+          "numero": "FR 3609",
+          "de": "LIS",
+          "vers": "CRL",
+          "depart": "2027-03-08T17:05"
+        }
+      ],
+      "lien": "https://www.google.com/travel/flights?hl=fr&gl=be&curr=EUR&tfs=CBwQAhopEgoyMDI3LTAzLTA4KABqBwgBEgNMSVNyBwgBEgNDUkxyBwgBEgNCUlVAAUABSAFqAhACcAGYAQI&tfu=EgIIAQ",
+      "observeLe": "2026-11-05T16:30:33.092Z"
     }
   ],
   "echecs": {
@@ -448,8 +562,8 @@
     "google": 0
   },
   "google": {
-    "dernierCreneau": "2026-11-05#1",
-    "rotation": 3,
+    "dernierCreneau": "2026-11-05#4",
+    "rotation": 4,
     "niveau": null,
     "soloLe": "2026-11-05"
   },
