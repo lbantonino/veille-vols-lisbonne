@@ -52,3 +52,26 @@ test('notes : données illisibles, 502', async () => {
   assert.equal(res.status, 502);
   assert.deepEqual(await res.json(), { erreur: 'donnees' });
 });
+
+test('santé détaillée : dit si le serveur arrive à lire les notes, sans rien en montrer', async () => {
+  const { gererSanteDetaillee } = await import('../../src/robot/http.ts');
+  const { etatInitial } = await import('../../src/decisions.ts');
+  const avecJeton = { GITHUB_TOKEN: 'jeton-test' };
+
+  const ok = await (await gererSanteDetaillee(avecJeton, { lire: async () => ({ etat: etatInitial(), historique: [] }) })).json();
+  assert.deepEqual(ok, { ok: true, configChargee: true, jetonGitHub: true, notes: 'lisibles' });
+
+  const refus = await (
+    await gererSanteDetaillee(avecJeton, {
+      lire: async () => {
+        throw new Error('GitHub a répondu 401 pour data/etat.json');
+      },
+    })
+  ).json();
+  assert.deepEqual(refus, { ok: true, configChargee: true, jetonGitHub: true, notes: 'illisibles', raison: 'GitHub a répondu 401 pour data/etat.json' });
+
+  const sansJeton = await (await gererSanteDetaillee({}, {})).json();
+  assert.equal(sansJeton.jetonGitHub, false);
+  assert.equal(sansJeton.notes, 'illisibles');
+  assert.equal(JSON.stringify([ok, refus, sansJeton]).includes('2027'), false);
+});

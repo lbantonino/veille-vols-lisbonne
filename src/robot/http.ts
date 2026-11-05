@@ -32,6 +32,22 @@ export function gererSante(): Response {
   return json({ ok: true, configChargee: typeof voyage.aller === 'string' });
 }
 
+// GET /api/sante?notes=1 : le serveur arrive-t-il à lire les notes de l'agent ? Seulement oui/non et la raison
+// technique (ex. « GitHub a répondu 401 »), jamais le contenu ni la clé.
+export async function gererSanteDetaillee(env: EnvRobot, deps: Dependances = {}): Promise<Response> {
+  const jetonGitHub = Boolean(env.GITHUB_TOKEN);
+  const base = { ok: true, configChargee: typeof voyage.aller === 'string', jetonGitHub };
+  if (!jetonGitHub && env.DONNEES_LOCALES !== '1') {
+    return json({ ...base, notes: 'illisibles', raison: 'Pas de variable GITHUB_TOKEN dans Vercel' });
+  }
+  try {
+    await (deps.lire ?? lireDonneesAgent)(env);
+    return json({ ...base, notes: 'lisibles' });
+  } catch (e) {
+    return json({ ...base, notes: 'illisibles', raison: e instanceof Error ? e.message : String(e) });
+  }
+}
+
 // Mauvais codes à la suite, gardés en mémoire tant que la fonction reste chaude.
 const OUBLI_APRES_MS = 15 * 60_000;
 let echecs = 0;
