@@ -2,7 +2,7 @@
 import { appendFile } from 'node:fs/promises';
 import { alertes, fraicheurMaxHeures, quotaGoogle, voyage } from './config.ts';
 import { choisir, creneauGoogle, fusionnerOffres, memesVols } from './analyse.ts';
-import { decider, messageDeTravail, optionRecord, type Reglages } from './decisions.ts';
+import { decider, optionRecord, type Reglages } from './decisions.ts';
 import { messageFin } from './alertes.ts';
 import { chercherRyanair } from './sources/ryanair.ts';
 import { chercherGoogle, cleRequete, lireQuotaSerpApi, REQUETES_GOOGLE } from './sources/google.ts';
@@ -143,16 +143,6 @@ async function main(): Promise<void> {
     console.error(`Envoi Telegram impossible : ${texteErreur(e)}`);
     await ecrireEtat(etat);
     process.exitCode = 1;
-  }
-
-  // En journée, un message silencieux pour dire qu'il travaille (jamais en plus d'une vraie alerte).
-  const auTravail = process.exitCode ? null : messageDeTravail(maintenant, messages, choix);
-  if (auTravail) {
-    try {
-      await envoyerTelegram(auTravail, { silencieux: true });
-    } catch (e) {
-      console.error(`Message de travail non envoyé : ${texteErreur(e)}`);
-    }
   }
 }
 

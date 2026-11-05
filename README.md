@@ -11,7 +11,6 @@ Un agent qui surveille tout seul le prix des vols entre Bruxelles et Lisbonne po
 - **Le vrai prix** : billet et valise de 10 kg compris, affiché par personne pour 2 adultes.
 - **Places pour deux** : il compare le prix pour 1 personne et pour 2, et signale quand il ne reste sans doute qu'une place au prix le plus bas.
 - **Des alertes utiles** : nouveau record dans mes horaires, nouveau record hors horaires (marqué ⏰), prix jugé bas par Google, prix cible atteint, source en panne. Le silence veut dire que tout va bien.
-- **Me dit quand il travaille** : de 8h à 22h, un petit message Telegram silencieux à chaque passage, avec le lien pour venir le voir. Rien la nuit.
 - **S'arrête tout seul** le jour du départ.
 
 ## La page du robot : LisbonIA
@@ -84,7 +83,7 @@ Sans Telegram configuré, l'agent tourne en mode essai et affiche les messages a
 
 ## Réglages
 
-Tout se trouve dans [`src/config.ts`](src/config.ts) : dates, horaires préférés, aéroports, nombre d'adultes, prix de la valise Ryanair, prix cible, fréquence de Google Flights, heures des messages « au travail » et adresse de la page.
+Tout se trouve dans [`src/config.ts`](src/config.ts) : dates, horaires préférés, aéroports, nombre d'adultes, prix de la valise Ryanair, prix cible, fréquence de Google Flights.
 
 ## Tests
 
