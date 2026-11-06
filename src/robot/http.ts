@@ -46,8 +46,10 @@ export async function gererSanteDetaillee(env: EnvRobot, deps: Dependances = {})
     return json({ ...base, notes: 'illisibles', raison: 'Pas de variable GITHUB_TOKEN dans Vercel' });
   }
   try {
+    // La mémoire Lisbonne existe toujours : la lire prouve que la clé a accès au dépôt (en mission Palerme,
+    // un fichier absent compte comme vide, ce qui masquerait une clé sans accès).
+    await (deps.lire ?? lireDonneesAgent)(env);
     if (missionActive((deps.maintenant ?? (() => new Date()))()).id === 'palerme') await (deps.lirePalerme ?? lireDonneesPalerme)(env);
-    else await (deps.lire ?? lireDonneesAgent)(env);
     return json({ ...base, notes: 'lisibles' });
   } catch (e) {
     return json({ ...base, notes: 'illisibles', raison: e instanceof Error ? e.message : String(e) });

@@ -7,7 +7,7 @@ Un agent IA qui surveille tout seul le prix des vols et me prévient sur Telegra
 | Lisbonne | **LisbonIA** | jusqu'au départ, le 5 mars 2027 | veille du voyage du semi-marathon : alerte à chaque meilleur prix |
 | Palerme | **PalermoIA** | à partir du 9 mars 2027, 8h | chaque lundi matin, la semaine la moins chère pour 7 jours à Palerme |
 
-Le jour de la bascule, l'agent change de nom tout seul (la page et les messages deviennent PalermoIA) et m'envoie une notification avec les petites choses à faire de mon côté. Ajouter une destination, c'est décrire une nouvelle mission dans [`src/missions.ts`](src/missions.ts).
+Le jour de la bascule, l'agent change de nom tout seul (la page et les messages deviennent PalermoIA) et m'envoie une notification avec les petites choses à faire de mon côté. Chaque mission est décrite dans [`src/missions.ts`](src/missions.ts), qui dit aussi laquelle est active ; chaque mission a son propre passage (`src/missions/lisbonne.ts`, `src/palerme/`) et ses propres données. Ajouter une destination demande donc une nouvelle mission et son passage, sans toucher aux autres.
 
 ## Mission Palerme : le rapport hebdomadaire
 
@@ -105,7 +105,7 @@ Tout se trouve dans [`src/config.ts`](src/config.ts) : dates, horaires préfér�
 ## Tests
 
 ```bash
-npm test          # 108 tests
+npm test          # 113 tests
 npm run typecheck # vérification TypeScript
 ```
 

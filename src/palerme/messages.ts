@@ -61,3 +61,9 @@ export function messageBascule(m: MissionPalerme): string {
     'Ton premier rapport arrive juste après ce message.',
   ].join('\n');
 }
+
+// Sans Ryanair, pas de rapport (Google a besoin de ses dates) : envoyé une fois par semaine tant que la panne dure.
+export function messagePanneRyanair(echecs: number, erreur?: string): string {
+  const detail = erreur ? `\nDétail : ${html(erreur)}` : '';
+  return `🔧 <b>Ryanair ne répond plus</b> (${echecs} échecs d'affilée).\nLe rapport de la semaine attend : je réessaie à chaque passage.${detail}`;
+}

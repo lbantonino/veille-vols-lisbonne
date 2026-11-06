@@ -7,11 +7,19 @@ export interface EtatPalerme {
   basculeAnnonceeLe: string | null;
   dernierRapport: Rapport | null;
   echecs: { ryanair: number; google: number };
+  panneRyanairSignalee: string | null; // semaine de rapport de la dernière alerte « Ryanair ne répond plus »
+  rapportEnAttente: Rapport | null; // rapport construit mais pas parti (Telegram en échec), renvoyé tel quel
 }
 
 export const DOSSIER_PALERME = new URL('../../data/palerme/', import.meta.url);
 
-export const etatPalermeInitial = (): EtatPalerme => ({ basculeAnnonceeLe: null, dernierRapport: null, echecs: { ryanair: 0, google: 0 } });
+export const etatPalermeInitial = (): EtatPalerme => ({
+  basculeAnnonceeLe: null,
+  dernierRapport: null,
+  echecs: { ryanair: 0, google: 0 },
+  panneRyanairSignalee: null,
+  rapportEnAttente: null,
+});
 
 export async function lireEtatPalerme(dossier: URL = DOSSIER_PALERME): Promise<EtatPalerme> {
   try {

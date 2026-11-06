@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import { passagePalerme, type DepsPalerme } from '../../src/palerme/passage.ts';
 import type { SemaineRyanair } from '../../src/sources/ryanair.ts';
+import { semaineDeRapport } from '../../src/missions.ts';
 
 const DOSSIER = new URL(`../.palerme-essai-${process.pid}/`, import.meta.url);
 after(() => rmSync(DOSSIER, { recursive: true, force: true }));
@@ -130,4 +131,89 @@ test('aucune semaine trouvée : le rapport le dit, et la semaine est faite', asy
   assert.equal(messages.length, 1);
   assert.match(messages[0]!, /aucune semaine trouvée/i);
   assert.equal(lignesRapports().length, 1);
+});
+
+test('Ryanair en panne deux semaines : une alerte par semaine, qui dit que le rapport attend', async () => {
+  etatBasculeFaite();
+  const messages: string[] = [];
+  const panne = deps(messages, {
+    chercherRyanair: async () => {
+      throw new Error('Ryanair a répondu 409 pour CRL');
+    },
+  });
+  for (const heure of ['10', '11', '12', '13']) await passagePalerme(new Date(`2027-03-10T${heure}:00:00Z`), panne);
+  for (const heure of ['08', '09', '10']) await passagePalerme(new Date(`2027-03-15T${heure}:00:00Z`), panne);
+  assert.equal(messages.length, 2);
+  for (const message of messages) {
+    assert.match(message, /Ryanair ne répond plus/);
+    assert.match(message, /rapport de la semaine attend/);
+    assert.doesNotMatch(message, /autres sources/);
+  }
+  assert.equal(lignesRapports().length, 0);
+});
+
+test('alerte de panne non envoyée : elle repart au passage suivant', async () => {
+  etatBasculeFaite();
+  const messages: string[] = [];
+  const ryanairEnPanne = async () => {
+    throw new Error('Ryanair a répondu 409 pour CRL');
+  };
+  const telegramEnPanne = deps(messages, {
+    chercherRyanair: ryanairEnPanne,
+    envoyer: async () => {
+      throw new Error('Telegram a répondu 502');
+    },
+  });
+  for (const heure of ['10', '11', '12']) await passagePalerme(new Date(`2027-03-10T${heure}:00:00Z`), telegramEnPanne);
+  await passagePalerme(new Date('2027-03-10T13:00:00Z'), deps(messages, { chercherRyanair: ryanairEnPanne }));
+  assert.equal(messages.length, 1);
+  assert.match(messages[0]!, /Ryanair ne répond plus/);
+});
+
+test('Telegram en échec plusieurs passages : une seule recherche Google pour le rapport', async () => {
+  etatBasculeFaite();
+  const messages: string[] = [];
+  let appelsGoogle = 0;
+  const chercherGoogle = async () => {
+    appelsGoogle += 1;
+    return null;
+  };
+  const telegramEnPanne = deps(messages, {
+    chercherGoogle,
+    envoyer: async () => {
+      throw new Error('Telegram a répondu 502');
+    },
+  });
+  for (const heure of ['10', '11', '12', '13', '14']) await passagePalerme(new Date(`2027-03-10T${heure}:00:00Z`), telegramEnPanne);
+  process.exitCode = undefined;
+  await passagePalerme(new Date('2027-03-10T15:00:00Z'), deps(messages, { chercherGoogle }));
+  assert.equal(appelsGoogle, 1);
+  assert.equal(messages.length, 1);
+  assert.match(messages[0]!, /ton rapport de la semaine/);
+  assert.equal(lignesRapports().length, 1);
+});
+
+test('rapport en attente d’une semaine passée : un rapport neuf pour la nouvelle semaine', async () => {
+  etatBasculeFaite();
+  const messages: string[] = [];
+  let appelsGoogle = 0;
+  const chercherGoogle = async () => {
+    appelsGoogle += 1;
+    return null;
+  };
+  await passagePalerme(
+    new Date('2027-03-10T10:00:00Z'),
+    deps(messages, {
+      chercherGoogle,
+      envoyer: async () => {
+        throw new Error('Telegram a répondu 502');
+      },
+    }),
+  );
+  process.exitCode = undefined;
+  const lundi = new Date('2027-03-15T08:00:00Z');
+  await passagePalerme(lundi, deps(messages, { chercherGoogle }));
+  assert.equal(appelsGoogle, 2);
+  assert.equal(messages.length, 1);
+  assert.equal(JSON.parse(lignesRapports()[0]!).semaine, semaineDeRapport(lundi));
 });

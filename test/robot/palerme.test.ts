@@ -78,3 +78,18 @@ test('santé : le nom du robot de la mission, et aucune date', async () => {
   assert.ok(['LisbonIA', 'PalermoIA'].includes(corps.robot));
   assert.equal(JSON.stringify(corps).includes('2027'), false);
 });
+
+test('santé détaillée en mission Palerme : une clé sans accès au dépôt (404) est signalée', async () => {
+  const { gererSanteDetaillee } = await import('../../src/robot/http.ts');
+  const sante = await (
+    await gererSanteDetaillee(env, {
+      maintenant: () => new Date('2027-03-16T10:00:00Z'),
+      lire: async () => {
+        throw new Error('GitHub a répondu 404 pour data/etat.json');
+      },
+      lirePalerme: async () => ({ etat: etatPalermeInitial(), rapports: [] }),
+    })
+  ).json();
+  assert.equal(sante.notes, 'illisibles');
+  assert.match(sante.raison, /404/);
+});
