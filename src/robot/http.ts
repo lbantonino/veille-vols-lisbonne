@@ -2,15 +2,18 @@
 // Les fichiers de api/ ne font que les appeler ; le serveur local (src/outils/serveur-local.ts) aussi.
 import { voyage } from '../config.ts';
 import { codeValide, delaiApresEchecs } from './acces.ts';
-import { lireDonneesAgent } from './donnees.ts';
-import { resumer, voyageCommence } from './resume.ts';
-import { comparerEnDirect, lireOffres, verifierRyanair } from './direct.ts';
-import { chercherRyanair } from '../sources/ryanair.ts';
+import { lireDonneesAgent, lireDonneesPalerme } from './donnees.ts';
+import { resumer, resumerPalerme, voyageCommence } from './resume.ts';
+import { comparerEnDirect, comparerPalerme, lireOffres, verifierRyanair, verifierSemaine } from './direct.ts';
+import { chercherRyanair, chercherSemaineRyanair } from '../sources/ryanair.ts';
+import { missionActive } from '../missions.ts';
 
 // Dépendances remplaçables (tests, serveur local).
 export interface Dependances {
   lire?: typeof lireDonneesAgent;
   chercher?: typeof chercherRyanair;
+  lirePalerme?: typeof lireDonneesPalerme;
+  chercherSemaine?: typeof chercherSemaineRyanair;
   maintenant?: () => Date;
   attendre?: (ms: number) => Promise<void>;
 }
@@ -20,6 +23,7 @@ export interface EnvRobot {
   GITHUB_TOKEN?: string;
   GITHUB_DEPOT?: string;
   DONNEES_LOCALES?: string;
+  DOSSIER_DONNEES?: string;
 }
 
 const ENTETES_JSON = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
@@ -28,8 +32,9 @@ export const json = (corps: unknown, status = 200): Response =>
   new Response(JSON.stringify(corps), { status, headers: ENTETES_JSON });
 
 // Prouve que la fonction a bien chargé le code de l'agent, sans rien dévoiler du voyage.
-export function gererSante(): Response {
-  return json({ ok: true, configChargee: typeof voyage.aller === 'string' });
+// Public : seul le nom du robot de la mission active est donné (pas une donnée personnelle).
+export function gererSante(maintenant: Date = new Date()): Response {
+  return json({ ok: true, configChargee: typeof voyage.aller === 'string', robot: missionActive(maintenant).robot });
 }
 
 // GET /api/sante?notes=1 : le serveur arrive-t-il à lire les notes de l'agent ? Seulement oui/non et la raison
@@ -41,7 +46,8 @@ export async function gererSanteDetaillee(env: EnvRobot, deps: Dependances = {})
     return json({ ...base, notes: 'illisibles', raison: 'Pas de variable GITHUB_TOKEN dans Vercel' });
   }
   try {
-    await (deps.lire ?? lireDonneesAgent)(env);
+    if (missionActive((deps.maintenant ?? (() => new Date()))()).id === 'palerme') await (deps.lirePalerme ?? lireDonneesPalerme)(env);
+    else await (deps.lire ?? lireDonneesAgent)(env);
     return json({ ...base, notes: 'lisibles' });
   } catch (e) {
     return json({ ...base, notes: 'illisibles', raison: e instanceof Error ? e.message : String(e) });
@@ -90,9 +96,14 @@ export async function verifierAcces(
 export async function gererNotes(request: Request, env: EnvRobot, deps: Dependances = {}): Promise<Response> {
   const refus = await verifierAcces(request, env, deps);
   if (refus) return refus;
+  const maintenant = (deps.maintenant ?? (() => new Date()))();
   try {
+    if (missionActive(maintenant).id === 'palerme') {
+      const { etat, rapports } = await (deps.lirePalerme ?? lireDonneesPalerme)(env);
+      return json(resumerPalerme(etat, rapports, maintenant));
+    }
     const { etat, historique } = await (deps.lire ?? lireDonneesAgent)(env);
-    return json(resumer(etat, historique, (deps.maintenant ?? (() => new Date()))()));
+    return json(resumer(etat, historique, maintenant));
   } catch (e) {
     console.error(`Notes illisibles : ${e instanceof Error ? e.message : String(e)}`);
     return json({ erreur: 'donnees' }, 502);
@@ -106,6 +117,13 @@ export async function gererRyanair(request: Request, env: EnvRobot, deps: Depend
   const refus = await verifierAcces(request, env, deps);
   if (refus) return refus;
   const maintenant = (deps.maintenant ?? (() => new Date()))();
+  if (missionActive(maintenant).id === 'palerme') {
+    try {
+      return json(await verifierSemaine(maintenant, deps.chercherSemaine ?? chercherSemaineRyanair));
+    } catch (e) {
+      return json({ erreur: 'ryanair', message: texteErreur(e) }, 502);
+    }
+  }
   if (voyageCommence(maintenant)) return json({ erreur: 'termine' }, 409);
   try {
     return json(await verifierRyanair(maintenant, deps.chercher ?? chercherRyanair));
@@ -119,8 +137,17 @@ export async function gererComparer(request: Request, env: EnvRobot, deps: Depen
   const refus = await verifierAcces(request, env, deps);
   if (refus) return refus;
   const maintenant = (deps.maintenant ?? (() => new Date()))();
-  if (voyageCommence(maintenant)) return json({ erreur: 'termine' }, 409);
   const corps: unknown = await request.json().catch(() => null);
+  if (missionActive(maintenant).id === 'palerme') {
+    try {
+      const { etat } = await (deps.lirePalerme ?? lireDonneesPalerme)(env);
+      return json(comparerPalerme(etat, corps));
+    } catch (e) {
+      console.error(`Comparaison impossible : ${texteErreur(e)}`);
+      return json({ erreur: 'donnees' }, 502);
+    }
+  }
+  if (voyageCommence(maintenant)) return json({ erreur: 'termine' }, 409);
   try {
     const { etat } = await (deps.lire ?? lireDonneesAgent)(env);
     return json(comparerEnDirect(etat, lireOffres(corps), maintenant));

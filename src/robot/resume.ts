@@ -3,6 +3,16 @@ import type { Etat, Offre, Source } from '../types.ts';
 import { passage, voyage } from '../config.ts';
 import { texteHoraires } from '../horaires.ts';
 import type { LigneHistorique } from './donnees.ts';
+import { LISBONNE, PALERME } from '../missions.ts';
+import type { EtatPalerme } from '../palerme/stockage.ts';
+import type { Rapport } from '../palerme/rapport.ts';
+
+export interface InfosMission {
+  id: 'lisbonne' | 'palerme';
+  robot: string;
+  trajet: string;
+  details: string;
+}
 
 export interface LigneJournal {
   le: string;
@@ -19,6 +29,7 @@ export interface PointCourbe {
 }
 
 export interface Resume {
+  mission: InfosMission;
   voyage: { aller: string; retour: string; horaires: string };
   records: Etat['records'];
   dernierPassage: string | null;
@@ -108,6 +119,7 @@ export const voyageCommence = (maintenant: Date): boolean => maintenant.toISOStr
 
 export function resumer(etat: Etat, historique: LigneHistorique[], maintenant: Date): Resume {
   return {
+    mission: { id: 'lisbonne', robot: LISBONNE.robot, trajet: LISBONNE.trajet, details: `${voyage.adultes} adultes · ${texteHoraires()}` },
     voyage: { aller: voyage.aller, retour: voyage.retour, horaires: texteHoraires() },
     records: etat.records,
     dernierPassage: historique.at(-1)?.le ?? null,
@@ -118,5 +130,33 @@ export function resumer(etat: Etat, historique: LigneHistorique[], maintenant: D
     google: offresDe(etat, 'google'),
     echecs: etat.echecs,
     termine: voyageCommence(maintenant),
+  };
+}
+
+// ---------- Mission Palerme ----------
+
+export interface ResumePalerme {
+  mission: InfosMission;
+  dernierRapport: Rapport | null;
+  journal: Rapport[]; // 10 derniers rapports, le plus récent d'abord
+  courbe: { le: string; meilleur: number | null }[];
+  dernierPassage: string | null;
+  termine: false;
+}
+
+export function resumerPalerme(etat: EtatPalerme, rapports: Rapport[], _maintenant: Date): ResumePalerme {
+  const dernierRapport = etat.dernierRapport ?? rapports.at(-1) ?? null;
+  return {
+    mission: {
+      id: 'palerme',
+      robot: PALERME.robot,
+      trajet: PALERME.trajet,
+      details: `${PALERME.adultes} adulte · valise 20 kg · ${PALERME.dureeJours} jours, départ dans 1 à 3 mois`,
+    },
+    dernierRapport,
+    journal: rapports.slice(-TAILLE_JOURNAL).reverse(),
+    courbe: rapports.slice(-POINTS_MAX).map((r) => ({ le: r.le, meilleur: r.meilleurParPersonne })),
+    dernierPassage: dernierRapport?.le ?? null,
+    termine: false,
   };
 }

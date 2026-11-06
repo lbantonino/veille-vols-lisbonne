@@ -1,9 +1,13 @@
 // Lit la mémoire de l'agent (data/etat.json et data/historique.jsonl) :
 // dans le dépôt privé via l'API GitHub en production, ou sur le disque en local.
 import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { Etat } from '../types.ts';
 import { etatInitial } from '../decisions.ts';
 import type { EnvRobot } from './http.ts';
+import { etatPalermeInitial, type EtatPalerme } from '../palerme/stockage.ts';
+import type { Rapport } from '../palerme/rapport.ts';
 
 export interface LigneHistorique {
   le: string;
@@ -54,7 +58,7 @@ function lireEtatTexte(texte: string): Etat {
   return { ...etatInitial(), ...sauvegarde };
 }
 
-async function lireFichierGitHub(nom: string, env: EnvRobot, fetchImpl: typeof fetch): Promise<string> {
+async function lireFichierGitHub(nom: string, env: EnvRobot, fetchImpl: typeof fetch, absentEgalVide = false): Promise<string> {
   const depot = env.GITHUB_DEPOT ?? DEPOT_PAR_DEFAUT;
   const reponse = await fetchImpl(`https://api.github.com/repos/${depot}/contents/data/${nom}?ref=main`, {
     headers: {
@@ -64,6 +68,7 @@ async function lireFichierGitHub(nom: string, env: EnvRobot, fetchImpl: typeof f
     },
     signal: AbortSignal.timeout(15_000),
   });
+  if (absentEgalVide && reponse.status === 404) return '';
   if (!reponse.ok) throw new Error(`GitHub a répondu ${reponse.status} pour data/${nom}`);
   return reponse.text();
 }
@@ -82,4 +87,39 @@ export async function lireDonneesAgent(
     lireFichierGitHub('historique.jsonl', env, fetchImpl),
   ]);
   return { etat: lireEtatTexte(etatTexte), historique: lireHistorique(historiqueTexte) };
+}
+
+// ---------- Mission Palerme : data/palerme/etat.json et data/palerme/rapports.jsonl ----------
+
+function lireRapports(texte: string): Rapport[] {
+  const rapports: Rapport[] = [];
+  for (const ligne of texte.split('\n')) {
+    if (!ligne.trim()) continue;
+    try {
+      const r = JSON.parse(ligne) as Rapport;
+      if (typeof r.semaine === 'string' && typeof r.le === 'string') rapports.push(r);
+    } catch {
+      // ligne cassée : ignorée
+    }
+  }
+  return rapports;
+}
+
+const lireEtatPalermeTexte = (texte: string): EtatPalerme =>
+  texte.trim() ? { ...etatPalermeInitial(), ...(JSON.parse(texte) as Partial<EtatPalerme>) } : etatPalermeInitial();
+
+// Un fichier absent (mission qui n'a pas encore tourné) compte comme une mémoire vide.
+export async function lireDonneesPalerme(env: EnvRobot, fetchImpl: typeof fetch = fetch): Promise<{ etat: EtatPalerme; rapports: Rapport[] }> {
+  if (env.DONNEES_LOCALES === '1') {
+    const base = env.DOSSIER_DONNEES ? pathToFileURL(`${resolve(env.DOSSIER_DONNEES)}/`) : DOSSIER_LOCAL;
+    const dossier = new URL('palerme/', base);
+    const etatTexte = await readFile(new URL('etat.json', dossier), 'utf8').catch(() => '');
+    const rapportsTexte = await readFile(new URL('rapports.jsonl', dossier), 'utf8').catch(() => '');
+    return { etat: lireEtatPalermeTexte(etatTexte), rapports: lireRapports(rapportsTexte) };
+  }
+  const [etatTexte, rapportsTexte] = await Promise.all([
+    lireFichierGitHub('palerme/etat.json', env, fetchImpl, true),
+    lireFichierGitHub('palerme/rapports.jsonl', env, fetchImpl, true),
+  ]);
+  return { etat: lireEtatPalermeTexte(etatTexte), rapports: lireRapports(rapportsTexte) };
 }

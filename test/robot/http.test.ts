@@ -6,7 +6,7 @@ test('santé : répond sans donnée personnelle', async () => {
   const res = gererSante();
   assert.equal(res.status, 200);
   const corps = await res.json();
-  assert.deepEqual(corps, { ok: true, configChargee: true });
+  assert.deepEqual(corps, { ok: true, configChargee: true, robot: 'LisbonIA' });
   assert.equal(JSON.stringify(corps).includes('2027'), false);
 });
 

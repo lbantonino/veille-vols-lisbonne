@@ -12,14 +12,21 @@ const SITE = fileURLToPath(new URL('../../site/', import.meta.url));
 const CODE_LOCAL = 'code-local-essai-2026'; // valeur d'essai, uniquement pour ce serveur local
 
 const env: EnvRobot = { ...process.env, DONNEES_LOCALES: '1', CODE_ACCES: process.env.CODE_ACCES ?? CODE_LOCAL };
-const deps: Dependances =
-  process.env.SIMULER_PANNE_RYANAIR === '1'
+// ESCALE_MAINTENANT=2027-03-16T10:00:00Z : simule une date, pour essayer la mission Palerme avant mars.
+const maintenantSimule = process.env.ESCALE_MAINTENANT ? new Date(process.env.ESCALE_MAINTENANT) : null;
+const deps: Dependances = {
+  ...(maintenantSimule ? { maintenant: () => maintenantSimule } : {}),
+  ...(process.env.SIMULER_PANNE_RYANAIR === '1'
     ? {
         chercher: async () => {
           throw new Error('Ryanair a répondu 409 pour CRL (panne simulée)');
         },
+        chercherSemaine: async () => {
+          throw new Error('Ryanair a répondu 409 pour CRL (panne simulée)');
+        },
       }
-    : {};
+    : {}),
+};
 
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -32,7 +39,7 @@ const TYPES: Record<string, string> = {
 };
 
 const ROUTES: Record<string, { methode: string; gerer: (r: Request) => Promise<Response> | Response }> = {
-  '/api/sante': { methode: 'GET', gerer: () => gererSante() },
+  '/api/sante': { methode: 'GET', gerer: () => gererSante(maintenantSimule ?? new Date()) },
   '/api/notes': { methode: 'GET', gerer: (r) => gererNotes(r, env, deps) },
   '/api/ryanair': { methode: 'POST', gerer: (r) => gererRyanair(r, env, deps) },
   '/api/comparer': { methode: 'POST', gerer: (r) => gererComparer(r, env, deps) },
@@ -94,4 +101,5 @@ createServer(async (req, res) => {
   console.log(`Page du robot : http://localhost:${PORT}`);
   if (!process.env.CODE_ACCES) console.log(`Code d'accès local (essai) : ${CODE_LOCAL}`);
   if (deps.chercher) console.log('Panne Ryanair simulée.');
+  if (maintenantSimule) console.log(`Date simulée : ${maintenantSimule.toISOString()}`);
 });

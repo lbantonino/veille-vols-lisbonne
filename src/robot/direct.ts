@@ -4,16 +4,22 @@ import type { Choix, Etat, Offre, Vol } from '../types.ts';
 import { alertes, fraicheurMaxHeures } from '../config.ts';
 import { choisir, fusionnerOffres } from '../analyse.ts';
 import { bat } from '../decisions.ts';
-import { chercherRyanair } from '../sources/ryanair.ts';
+import { chercherRyanair, chercherSemaineRyanair, type SemaineRyanair } from '../sources/ryanair.ts';
+import { fenetreDeDepart, PALERME } from '../missions.ts';
+import { avecValise, type PrixValise } from '../palerme/rapport.ts';
+import type { EtatPalerme } from '../palerme/stockage.ts';
+import { arrondi } from '../format.ts';
 
 const DUREE_CACHE_MS = 60_000;
 const OFFRES_MAX = 20;
 
 let cache: { le: number; offres: Offre[] } | null = null;
+let cacheSemaine: { le: number; semaine: (SemaineRyanair & PrixValise) | null } | null = null;
 
 // Pour les tests.
 export function oublierCache(): void {
   cache = null;
+  cacheSemaine = null;
 }
 
 // Ryanair au plus une fois par minute : des visites rapprochées réutilisent le même résultat.
@@ -94,4 +100,35 @@ export function lireOffres(corps: unknown): Offre[] {
     });
   }
   return offres;
+}
+
+// ---------- Mission Palerme : la semaine la moins chère, en direct (même fenêtre que le rapport) ----------
+
+export async function verifierSemaine(
+  maintenant: Date,
+  chercher: typeof chercherSemaineRyanair = chercherSemaineRyanair,
+): Promise<{ semaine: (SemaineRyanair & PrixValise) | null; verifieLe: string; depuisCache: boolean }> {
+  if (cacheSemaine && maintenant.getTime() - cacheSemaine.le < DUREE_CACHE_MS) {
+    return { semaine: cacheSemaine.semaine, verifieLe: new Date(cacheSemaine.le).toISOString(), depuisCache: true };
+  }
+  const fenetre = fenetreDeDepart(maintenant, PALERME);
+  const trouvee = await chercher({
+    depuis: PALERME.depuisRyanair,
+    vers: PALERME.vers,
+    debut: fenetre.debut,
+    fin: fenetre.fin,
+    dureeJours: PALERME.dureeJours,
+    adultes: PALERME.adultes,
+  });
+  const semaine = trouvee ? { ...trouvee, ...avecValise(trouvee.prixParPersonne, 'Ryanair', PALERME) } : null;
+  cacheSemaine = { le: maintenant.getTime(), semaine };
+  return { semaine, verifieLe: maintenant.toISOString(), depuisCache: false };
+}
+
+// Le prix trouvé en direct (envoyé par la page) comparé au dernier rapport.
+export function comparerPalerme(etat: EtatPalerme, corps: unknown): { mission: 'palerme'; nouveau: number | null; dernier: number | null; difference: number | null } {
+  const brut = (corps as { semaine?: { prixParPersonne?: unknown } } | null)?.semaine?.prixParPersonne;
+  const nouveau = typeof brut === 'number' && Number.isFinite(brut) && brut > 0 ? brut : null;
+  const dernier = etat.dernierRapport?.meilleurParPersonne ?? null;
+  return { mission: 'palerme', nouveau, dernier, difference: nouveau !== null && dernier !== null ? arrondi(nouveau - dernier) : null };
 }
