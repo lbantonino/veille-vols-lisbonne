@@ -2,10 +2,17 @@
 import { appendFile } from 'node:fs/promises';
 import { alertes, fraicheurMaxHeures, quotaGoogle, voyage } from './config.ts';
 import { choisir, creneauGoogle, fusionnerOffres, memesVols } from './analyse.ts';
-import { decider, optionRecord, type Reglages } from './decisions.ts';
+import { bonusAFaire, decider, optionRecord, type Reglages } from './decisions.ts';
 import { messageFin } from './alertes.ts';
 import { chercherRyanair } from './sources/ryanair.ts';
-import { chercherGoogle, cleRequete, lireQuotaSerpApi, REQUETES_GOOGLE } from './sources/google.ts';
+import {
+  chercherGoogle,
+  chercherRetourGoogle,
+  cleRequete,
+  lireQuotaSerpApi,
+  requeteDeOffre,
+  REQUETES_GOOGLE,
+} from './sources/google.ts';
 import { ajouterHistorique, ecrireEtat, lireEtat } from './stockage.ts';
 import { envoyerTelegram, telegramConfigure } from './telegram.ts';
 import { prix, texteErreur } from './format.ts';
@@ -85,24 +92,32 @@ async function main(): Promise<void> {
   etat.dernieresOffres = fusionnerOffres(etat.dernieresOffres, nouvelles, clesRafraichies, maintenant, fraicheurMaxHeures);
   const choix = choisir(etat.dernieresOffres);
 
-  // Nouveau record venant de Google : une recherche pour 1 personne (au plus une par jour)
-  // pour repérer une place seule moins chère.
+  // Nouveau record venant de Google : UNE recherche bonus au plus par jour (quota gratuit protégé).
+  // Aller-retour : on demande le vol retour exact. Sinon : le prix pour 1 personne (place seule moins chère ?).
   const offreGoogle = optionRecord(etat, choix, reglages)?.offres.find((o) => o.source === 'google');
-  if (cle && offreGoogle && etat.google.soloLe !== aujourdhui) {
+  const bonus = bonusAFaire(etat.google.bonusLe ?? null, offreGoogle, aujourdhui);
+  if (cle && offreGoogle && bonus) {
     try {
       if ((await lireQuotaSerpApi(cle)) > quotaGoogle.reserve) {
-        const requete = { sens: offreGoogle.sens, horaires: offreGoogle.requete?.endsWith(':horaires') ?? false };
-        const solo = await chercherGoogle(requete, 1, cle, maintenant);
-        const memeVol = solo.offres.find((o) => memesVols(o, offreGoogle));
-        if (memeVol && memeVol.prixParPersonne < offreGoogle.prixParPersonne - 0.01) {
-          offreGoogle.prixSoloParPersonne = memeVol.prixParPersonne;
+        if (bonus === 'retour' && offreGoogle.jetonRetour) {
+          const retour = await chercherRetourGoogle(requeteDeOffre(offreGoogle), voyage.adultes, cle, offreGoogle.jetonRetour);
+          if (retour) offreGoogle.volsRetour = retour.vols;
+          console.log(`Vol retour : ${retour ? retour.vols.map((v) => `${v.numero} ${v.depart}`).join(' + ') : 'introuvable'}.`);
+        } else {
+          const solo = await chercherGoogle(requeteDeOffre(offreGoogle), 1, cle, maintenant);
+          const memeVol = solo.offres.find((o) => memesVols(o, offreGoogle));
+          if (memeVol && memeVol.prixParPersonne < offreGoogle.prixParPersonne - 0.01) {
+            offreGoogle.prixSoloParPersonne = memeVol.prixParPersonne;
+          }
         }
-        etat.google.soloLe = aujourdhui;
+        etat.google.bonusLe = aujourdhui;
       }
     } catch (e) {
-      console.error(`Vérification pour 1 personne impossible : ${texteErreur(e)}`);
+      console.error(`Recherche bonus Google impossible : ${texteErreur(e)}`);
     }
   }
+  // Les jetons de Google ne servent que pendant le passage : on ne les enregistre jamais.
+  for (const offre of etat.dernieresOffres) delete offre.jetonRetour;
 
   const { etat: etatApres, messages } = decider(etat, choix, avis, resultats, reglages, maintenant);
 

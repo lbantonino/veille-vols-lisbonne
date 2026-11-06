@@ -1,6 +1,6 @@
 // Le « cerveau » de l'agent : à partir des prix du moment et de ce qu'il a déjà vu,
 // il décide quels messages t'envoyer. Aucune requête réseau ici, tout est testable.
-import type { AvisGoogle, Choix, Etat, Option, RecordPrix, ResultatSource } from './types.ts';
+import type { AvisGoogle, Choix, Etat, Offre, Option, RecordPrix, ResultatSource } from './types.ts';
 import {
   messageCible,
   messageDemarrage,
@@ -24,7 +24,7 @@ export function etatInitial(): Etat {
     records: { horaires: null, tous: null },
     dernieresOffres: [],
     echecs: { ryanair: 0, google: 0 },
-    google: { dernierCreneau: null, rotation: 0, niveau: null, soloLe: null },
+    google: { dernierCreneau: null, rotation: 0, niveau: null, bonusLe: null },
     cibleAtteinte: false,
   };
 }
@@ -105,4 +105,11 @@ export function decider(
   }
 
   return { etat, messages };
+}
+
+// Une seule recherche Google « bonus » par jour, quand un record Google tombe :
+// le vol retour exact pour un aller-retour, sinon la vérification du prix pour 1 personne.
+export function bonusAFaire(bonusLe: string | null, offreGoogle: Offre | undefined, aujourdhui: string): 'retour' | 'solo' | null {
+  if (!offreGoogle || bonusLe === aujourdhui) return null;
+  return offreGoogle.sens === 'aller-retour' && offreGoogle.jetonRetour ? 'retour' : 'solo';
 }

@@ -23,7 +23,11 @@ export interface Offre {
   dansHoraires: boolean;
   // Recherche d'origine quand une source en fait plusieurs du même sens (ex. "google:aller-retour:horaires").
   requete?: string;
-  vols: Vol[]; // pour un aller-retour Google, seul l'aller est connu
+  vols: Vol[]; // pour un aller-retour Google : l'aller
+  // Aller-retour Google : le vol retour, quand l'agent a fait la recherche bonus pour le connaître.
+  volsRetour?: Vol[];
+  // Jeton Google pour demander le vol retour (jamais enregistré, il ne sert que pendant le passage).
+  jetonRetour?: string;
   lien: string;
   observeLe: string; // date ISO
 }
@@ -62,7 +66,7 @@ export interface Etat {
     dernierCreneau: string | null;
     rotation: number;
     niveau: string | null;
-    soloLe: string | null;
+    bonusLe: string | null; // jour de la dernière recherche bonus (1 par jour au maximum)
   };
   cibleAtteinte: boolean;
 }

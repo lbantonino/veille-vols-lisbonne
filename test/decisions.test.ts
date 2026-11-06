@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { decider, etatInitial, type Reglages } from '../src/decisions.ts';
+import { bonusAFaire, decider, etatInitial, type Reglages } from '../src/decisions.ts';
+import { blocOption } from '../src/alertes.ts';
 import type { Choix, Etat, Option } from '../src/types.ts';
 
 const maintenant = new Date('2026-11-04T12:30:00Z');
@@ -134,4 +135,46 @@ test('avis Google : alerte quand le prix devient « bas », une seule fois', () 
   assert.match(premier.messages[0]!, /Google juge le prix bas/);
 
   assert.equal(decider(premier.etat, choix(350, 230), avis, [], reglages, maintenant).messages.length, 0);
+});
+
+test('recherche bonus : le vol retour pour un aller-retour Google, sinon la vérification pour 1 personne, une fois par jour', () => {
+  const offreGoogle = (sens: 'aller' | 'aller-retour', jeton?: string) => ({
+    source: 'google' as const,
+    sens,
+    prixParPersonne: 212,
+    bagagesParPersonne: 0,
+    dansHoraires: true,
+    vols: [],
+    lien: 'https://exemple.test',
+    observeLe: maintenant.toISOString(),
+    ...(jeton ? { jetonRetour: jeton } : {}),
+  });
+  assert.equal(bonusAFaire(null, offreGoogle('aller-retour', 'jeton'), '2026-11-06'), 'retour');
+  assert.equal(bonusAFaire(null, offreGoogle('aller-retour'), '2026-11-06'), 'solo');
+  assert.equal(bonusAFaire(null, offreGoogle('aller'), '2026-11-06'), 'solo');
+  assert.equal(bonusAFaire('2026-11-06', offreGoogle('aller-retour', 'jeton'), '2026-11-06'), null);
+  assert.equal(bonusAFaire(null, undefined, '2026-11-06'), null);
+});
+
+test('alerte : le vol retour s’affiche quand il est connu', () => {
+  const option: Option = {
+    prixParPersonne: 212,
+    dansHoraires: true,
+    offres: [
+      {
+        source: 'google',
+        sens: 'aller-retour',
+        prixParPersonne: 212,
+        bagagesParPersonne: 0,
+        dansHoraires: true,
+        vols: [{ compagnie: 'TAP Air Portugal', numero: 'TP 647', de: 'BRU', vers: 'LIS', depart: '2027-03-05T06:00' }],
+        volsRetour: [{ compagnie: 'TAP Air Portugal', numero: 'TP 644', de: 'LIS', vers: 'BRU', depart: '2027-03-08T17:45' }],
+        lien: 'https://exemple.test',
+        observeLe: maintenant.toISOString(),
+      },
+    ],
+  };
+  const texte = blocOption(option);
+  assert.match(texte, /🛬 Retour : lun\. 8 mars à 17:45 · Lisbonne → Zaventem · TAP Air Portugal TP 644/);
+  assert.doesNotMatch(texte, /au choix/);
 });

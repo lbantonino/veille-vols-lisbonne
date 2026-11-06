@@ -8,9 +8,8 @@ import { lienRyanair } from './sources/ryanair.ts';
 const NOM_SOURCE: Record<Source, string> = { ryanair: 'Ryanair', google: 'Google Flights' };
 const NOM_SENS = { 'aller-retour': 'Aller-retour', aller: 'Aller', retour: 'Retour' } as const;
 
-function lignesVols(titre: string, offre: Offre): string[] {
-  const sensJambe = offre.sens === 'retour' ? 'retour' : 'aller';
-  return offre.vols.map((v) => {
+function lignesVols(titre: string, offre: Offre, vols: Offre['vols'] = offre.vols, sensJambe: 'aller' | 'retour' = offre.sens === 'retour' ? 'retour' : 'aller'): string[] {
+  return vols.map((v) => {
     const hors = volDansHoraires(sensJambe, v.depart) ? '' : ' · ⏰ hors horaires';
     return `${titre} : ${dateHeure(v.depart)} · ${nomAeroport(v.de)} → ${nomAeroport(v.vers)} · ${html(v.compagnie)} ${html(v.numero)}${hors}`;
   });
@@ -33,6 +32,10 @@ export function blocOption(option: Option): string {
   for (const offre of option.offres) {
     if (offre.sens === 'aller-retour') {
       lignes.push(...lignesVols('🛫 Aller', offre));
+      if (offre.volsRetour?.length) {
+        lignes.push(...lignesVols('🛬 Retour', offre, offre.volsRetour, 'retour'));
+        continue;
+      }
       lignes.push(
         offre.dansHoraires
           ? `🛬 Retour : ${dateHeure(voyage.retour)} après ${enClair(horaires.retourApres)}, vol au choix sur Google Flights (prix aller-retour)`

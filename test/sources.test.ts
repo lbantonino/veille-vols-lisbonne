@@ -2,7 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { convertirRyanair, type ReponseRyanair } from '../src/sources/ryanair.ts';
-import { convertirGoogle, parametresGoogle, type ReponseGoogle } from '../src/sources/google.ts';
+import {
+  convertirGoogle,
+  convertirRetourGoogle,
+  parametresGoogle,
+  parametresRetourGoogle,
+  type ReponseGoogle,
+} from '../src/sources/google.ts';
 
 const maintenant = new Date('2026-11-04T12:30:00Z');
 const lire = (nom: string) =>
@@ -46,6 +52,7 @@ const reponseGoogle: ReponseGoogle = {
           flight_number: 'TP 647',
         },
       ],
+      departure_token: 'jeton-du-retour',
     },
   ],
   other_flights: [{ flights: [] }],
@@ -98,4 +105,52 @@ test('Google : bons paramètres pour chaque recherche', () => {
   assert.equal(retour.get('arrival_id'), 'CRL,BRU');
   assert.equal(retour.get('outbound_date'), '2027-03-08');
   assert.equal(retour.get('return_date'), null);
+});
+
+test('Google : le jeton du vol retour est gardé sur l’aller-retour', () => {
+  const { offres } = convertirGoogle(reponseGoogle, { sens: 'aller-retour', horaires: true }, 2, maintenant);
+  assert.equal(offres[0]!.jetonRetour, 'jeton-du-retour');
+  const aller = convertirGoogle(reponseGoogle, { sens: 'aller', horaires: false }, 2, maintenant);
+  assert.equal(aller.offres[0]!.jetonRetour, undefined);
+});
+
+test('Google : la recherche du retour reprend la même recherche, avec le jeton', () => {
+  const p = parametresRetourGoogle({ sens: 'aller-retour', horaires: true }, 2, 'cle', 'jeton-du-retour');
+  assert.equal(p.get('departure_token'), 'jeton-du-retour');
+  assert.equal(p.get('type'), '1');
+  assert.equal(p.get('return_times'), '17,23');
+  assert.equal(p.get('adults'), '2');
+});
+
+test('Google : le vol retour le moins cher est retenu', () => {
+  const retour: ReponseGoogle = {
+    best_flights: [
+      {
+        price: 440,
+        flights: [
+          {
+            departure_airport: { id: 'LIS', time: '2027-03-08 19:30' },
+            arrival_airport: { id: 'BRU', time: '2027-03-08 23:10' },
+            airline: 'TAP Air Portugal',
+            flight_number: 'TP 646',
+          },
+        ],
+      },
+      {
+        price: 424,
+        flights: [
+          {
+            departure_airport: { id: 'LIS', time: '2027-03-08 17:45' },
+            arrival_airport: { id: 'BRU', time: '2027-03-08 21:25' },
+            airline: 'TAP Air Portugal',
+            flight_number: 'TP 644',
+          },
+        ],
+      },
+    ],
+  };
+  const r = convertirRetourGoogle(retour, 2);
+  assert.equal(r?.prixParPersonne, 212);
+  assert.deepEqual(r?.vols, [{ compagnie: 'TAP Air Portugal', numero: 'TP 644', de: 'LIS', vers: 'BRU', depart: '2027-03-08T17:45' }]);
+  assert.equal(convertirRetourGoogle({ error: "Google Flights hasn't returned any results for this query." }, 2), null);
 });

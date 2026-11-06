@@ -5,7 +5,7 @@ import {
   dateVoyage,
   formaterPrix,
   heureBruxelles,
-  lignesEcran,
+  lignesRecord,
   momentJournal,
   pointMinimum,
   texteAge,
@@ -13,8 +13,6 @@ import {
 } from './rendu.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
-const AEROPORTS = { CRL: 'Charleroi', BRU: 'Zaventem', LIS: 'Lisbonne' };
-const nomAeroport = (code) => AEROPORTS[code] ?? code;
 
 /** @param {string} balise @param {string} [classe] @param {string} [texte] */
 function el(balise, classe, texte) {
@@ -56,14 +54,14 @@ function blocRecord(titre, record) {
   bloc.append(el('p', 'record-prix', formaterPrix(record.prixParPersonne)));
   bloc.append(el('p', 'record-sous', `par personne, valise comprise · record ${texteAge(record.le, new Date())}`));
   const liste = el('ul', 'record-vols');
-  for (const offre of record.option.offres) {
-    for (const vol of offre.vols) {
-      const li = el('li');
-      li.append(el('span', '', `${lignesEcran([{ prixParPersonne: offre.prixParPersonne, vols: [vol] }])[0].texte}`));
-      li.append(el('span', 'record-trajet', `${nomAeroport(vol.de)} → ${nomAeroport(vol.vers)}`));
-      liste.append(li);
+  for (const ligne of lignesRecord(record.option.offres)) {
+    if ('note' in ligne) {
+      liste.append(el('li', 'record-note', ligne.note));
+      continue;
     }
-    if (offre.sens === 'aller-retour') liste.append(el('li', 'record-note', 'Retour au choix sur Google Flights'));
+    const li = el('li');
+    li.append(el('span', '', ligne.texte), el('span', 'record-trajet', ligne.trajet));
+    liste.append(li);
   }
   bloc.append(liste);
   const liens = el('p', 'record-liens');

@@ -78,6 +78,23 @@ function placeur(valeurs, largeur, hauteur, bornes) {
   };
 }
 
+const AEROPORTS = { CRL: 'Charleroi', BRU: 'Zaventem', LIS: 'Lisbonne' };
+const nomAeroport = (code) => AEROPORTS[code] ?? code;
+
+/**
+ * Les vols d'un record, aller puis retour ; pour un aller-retour Google sans retour connu, une note.
+ * @param {{ sens: string, vols: { numero: string, de: string, vers: string, depart: string }[], volsRetour?: { numero: string, de: string, vers: string, depart: string }[] }[]} offres
+ * @returns {({ texte: string, trajet: string } | { note: string })[]}
+ */
+export function lignesRecord(offres) {
+  const ligne = (v) => ({ texte: `${jourEtHeure(v.depart)} ${v.numero}`, trajet: `${nomAeroport(v.de)} → ${nomAeroport(v.vers)}` });
+  return offres.flatMap((offre) => {
+    const lignes = offre.vols.map(ligne);
+    if (offre.sens !== 'aller-retour') return lignes;
+    return offre.volsRetour?.length ? [...lignes, ...offre.volsRetour.map(ligne)] : [...lignes, { note: 'Retour au choix sur Google Flights' }];
+  });
+}
+
 /**
  * Tracé SVG d'une série de prix ; une valeur absente coupe la ligne.
  * Le prix le plus haut est en haut, le plus bas en bas. Sans bornes, la série a sa propre échelle.

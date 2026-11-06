@@ -1,7 +1,7 @@
 // Google Flights, interrogé via SerpApi (formule gratuite : 250 recherches par mois).
 // Le compte gratuit n'a pas de carte bancaire : SerpApi ne peut rien facturer.
 // En plus, l'agent vérifie le quota restant avant CHAQUE recherche (cette vérification est gratuite).
-import type { AvisGoogle, Offre, Sens } from '../types.ts';
+import type { AvisGoogle, Offre, Sens, Vol } from '../types.ts';
 import { voyage, google as reglages, horaires } from '../config.ts';
 import { arrondi } from '../format.ts';
 import { minuteAvant, volDansHoraires } from '../horaires.ts';
@@ -16,6 +16,7 @@ interface VolGoogle {
 interface ResultatGoogle {
   price?: number;
   flights: VolGoogle[];
+  departure_token?: string; // aller-retour : pour demander les vols retour
 }
 
 export interface ReponseGoogle {
@@ -101,6 +102,56 @@ function dansHoraires(q: RequeteGoogle, vols: Offre['vols']): boolean {
   return q.horaires && volDansHoraires('aller', premier.depart);
 }
 
+const versVols = (vols: VolGoogle[]): Vol[] =>
+  vols.map((v) => ({
+    compagnie: v.airline,
+    numero: v.flight_number,
+    de: v.departure_airport.id,
+    vers: v.arrival_airport.id,
+    depart: v.departure_airport.time.replace(' ', 'T'),
+  }));
+
+// La recherche qui a trouvé une offre (pour la refaire, pour 1 personne ou pour son vol retour).
+export const requeteDeOffre = (offre: Offre): RequeteGoogle => ({
+  sens: offre.sens,
+  horaires: offre.requete?.endsWith(':horaires') ?? false,
+});
+
+// La même recherche aller-retour, avec le jeton de l'aller choisi : Google renvoie alors les vols retour.
+export function parametresRetourGoogle(q: RequeteGoogle, adultes: number, cle: string, jeton: string): URLSearchParams {
+  const p = parametresGoogle(q, adultes, cle);
+  p.set('departure_token', jeton);
+  return p;
+}
+
+// Le vol retour le moins cher proposé pour l'aller choisi.
+export function convertirRetourGoogle(reponse: ReponseGoogle, adultes: number): { prixParPersonne: number; vols: Vol[] } | null {
+  if (reponse.error) {
+    if (/hasn't returned any results/i.test(reponse.error)) return null;
+    throw new Error(`SerpApi : ${reponse.error}`);
+  }
+  const diviseur = reglages.prixEstTotalDuGroupe ? adultes : 1;
+  const resultats = [...(reponse.best_flights ?? []), ...(reponse.other_flights ?? [])].filter(
+    (r): r is ResultatGoogle & { price: number } => typeof r.price === 'number' && r.flights.length > 0,
+  );
+  const moinsCher = resultats.sort((a, b) => a.price - b.price)[0];
+  return moinsCher ? { prixParPersonne: arrondi(moinsCher.price / diviseur), vols: versVols(moinsCher.flights) } : null;
+}
+
+export async function chercherRetourGoogle(
+  q: RequeteGoogle,
+  adultes: number,
+  cle: string,
+  jeton: string,
+): Promise<{ prixParPersonne: number; vols: Vol[] } | null> {
+  const reponse = await fetch(`https://serpapi.com/search.json?${parametresRetourGoogle(q, adultes, cle, jeton)}`, {
+    signal: AbortSignal.timeout(60_000),
+  });
+  const json = (await reponse.json()) as ReponseGoogle;
+  if (!reponse.ok && !json.error) throw new Error(`SerpApi a répondu ${reponse.status}`);
+  return convertirRetourGoogle(json, adultes);
+}
+
 export function convertirGoogle(
   reponse: ReponseGoogle,
   q: RequeteGoogle,
@@ -119,13 +170,7 @@ export function convertirGoogle(
   const offres: Offre[] = resultats
     .filter((r): r is ResultatGoogle & { price: number } => typeof r.price === 'number')
     .map((r) => {
-      const vols = r.flights.map((v) => ({
-        compagnie: v.airline,
-        numero: v.flight_number,
-        de: v.departure_airport.id,
-        vers: v.arrival_airport.id,
-        depart: v.departure_airport.time.replace(' ', 'T'),
-      }));
+      const vols = versVols(r.flights);
       return {
         source: 'google' as const,
         sens: q.sens,
@@ -134,6 +179,7 @@ export function convertirGoogle(
         dansHoraires: dansHoraires(q, vols),
         requete: cleRequete(q),
         vols,
+        ...(q.sens === 'aller-retour' && r.departure_token ? { jetonRetour: r.departure_token } : {}),
         lien,
         observeLe: maintenant.toISOString(),
       };

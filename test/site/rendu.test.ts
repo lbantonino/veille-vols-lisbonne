@@ -9,6 +9,7 @@ import {
   formaterPrix,
   heureBruxelles,
   lignesEcran,
+  lignesRecord,
   momentJournal,
   pointMinimum,
   texteAge,
@@ -108,4 +109,17 @@ test('dernier passage : l’heure seule aujourd’hui, avec la date sinon', () =
   const maintenant = new Date('2026-11-04T22:30:00Z'); // 23h30 à Bruxelles
   assert.equal(texteDernierPassage('2026-11-04T21:17:00Z', maintenant), '22h17');
   assert.equal(texteDernierPassage('2026-11-02T21:17:00Z', maintenant), 'lun. 2 nov. · 22h17');
+});
+
+test('record : l’aller et le retour quand Google les a donnés, sinon « retour au choix »', () => {
+  const aller = { compagnie: 'TAP Air Portugal', numero: 'TP 647', de: 'BRU', vers: 'LIS', depart: '2027-03-05T06:00' };
+  const retour = { compagnie: 'TAP Air Portugal', numero: 'TP 644', de: 'LIS', vers: 'BRU', depart: '2027-03-08T17:45' };
+  assert.deepEqual(lignesRecord([{ sens: 'aller-retour', vols: [aller], volsRetour: [retour] }]), [
+    { texte: 'ven 06:00 TP 647', trajet: 'Zaventem → Lisbonne' },
+    { texte: 'lun 17:45 TP 644', trajet: 'Lisbonne → Zaventem' },
+  ]);
+  assert.deepEqual(lignesRecord([{ sens: 'aller-retour', vols: [aller] }]), [
+    { texte: 'ven 06:00 TP 647', trajet: 'Zaventem → Lisbonne' },
+    { note: 'Retour au choix sur Google Flights' },
+  ]);
 });
