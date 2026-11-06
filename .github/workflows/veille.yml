@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write # enregistrer l'historique des prix dans le dépôt
-  actions: write # se désactiver tout seul le jour du départ
 
 concurrency:
   group: veille
@@ -42,9 +41,3 @@ jobs:
           git commit --quiet -m "données : passage du $(date -u '+%Y-%m-%d %H:%M') UTC"
           git pull --rebase --quiet
           git push --quiet
-
-      - name: Arrêter la veille après le départ
-        if: steps.veille.outputs.termine == 'true'
-        run: gh workflow disable veille.yml
-        env:
-          GH_TOKEN: ${{ github.token }}
