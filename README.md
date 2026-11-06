@@ -1,8 +1,23 @@
-# Veille vols Lisbonne ✈️
+# Escale ✈️
 
-Un agent qui surveille tout seul le prix des vols entre Bruxelles et Lisbonne pour un semi-marathon, du 5 au 8 mars 2027, et qui m'envoie une alerte Telegram dès qu'un prix bat le record.
+Un agent IA qui surveille tout seul le prix des vols et me prévient sur Telegram. Il travaille en continu, destination après destination : chaque destination est une **escale**, avec son propre robot.
 
-## Ce qu'il fait
+| Mission | Robot | Quand | Ce qu'il fait |
+|---|---|---|---|
+| Lisbonne | **LisbonIA** | jusqu'au départ, le 5 mars 2027 | veille du voyage du semi-marathon : alerte à chaque meilleur prix |
+| Palerme | **PalermoIA** | à partir du 9 mars 2027, 8h | chaque lundi matin, la semaine la moins chère pour 7 jours à Palerme |
+
+Le jour de la bascule, l'agent change de nom tout seul (la page et les messages deviennent PalermoIA) et m'envoie une notification avec les petites choses à faire de mon côté. Ajouter une destination, c'est décrire une nouvelle mission dans [`src/missions.ts`](src/missions.ts).
+
+## Mission Palerme : le rapport hebdomadaire
+
+- **Ryanair, gratuit** : une seule requête renvoie l'aller-retour de 7 jours le moins cher, avec un départ entre 1 et 3 mois après le rapport (Ryanair dessert Palerme depuis Charleroi).
+- **Google Flights, 1 recherche par semaine** : les mêmes dates chez les autres compagnies, depuis Zaventem et Charleroi.
+- **Le vrai prix** : 1 adulte, petit sac et valise de 20 kg en soute comprise. Quand le supplément d'une compagnie n'est pas connu, son prix est marqué « valise non comprise ».
+- **Le rapport** : la semaine, les vols, le prix, la comparaison Google et l'évolution depuis la semaine d'avant, avec les liens de réservation. Si une source tombe en panne, l'agent réessaie à chaque passage et me prévient après 3 échecs.
+- Sa mémoire est dans `data/palerme/` (état et un rapport par ligne dans `rapports.jsonl`).
+
+## Mission Lisbonne : ce qu'elle fait
 
 - **Ryanair toutes les heures** (Charleroi), via les tarifs publics du site.
 - **Google Flights** (TAP, Brussels Airlines et les autres) via SerpApi, au plus une fois toutes les 4 heures.
@@ -11,11 +26,11 @@ Un agent qui surveille tout seul le prix des vols entre Bruxelles et Lisbonne po
 - **Le vrai prix** : billet et valise de 10 kg compris, affiché par personne pour 2 adultes.
 - **Places pour deux** : il compare le prix pour 1 personne et pour 2, et signale quand il ne reste sans doute qu'une place au prix le plus bas.
 - **Des alertes utiles** : nouveau record dans mes horaires, nouveau record hors horaires (marqué ⏰), prix jugé bas par Google, prix cible atteint, source en panne. Le silence veut dire que tout va bien.
-- **S'arrête tout seul** le jour du départ.
+- **S'arrête** le jour du départ, et laisse la place à la mission suivante.
 
-## La page du robot : LisbonIA
+## La page du robot
 
-Une page web où l'on voit l'agent travailler sous la forme d'un robot, **LisbonIA**, à son bureau, au milieu des pages de prix qu'il surveille.
+Une page web où l'on voit l'agent travailler sous la forme d'un robot à son bureau, au milieu des pages de prix qu'il surveille. Elle suit la mission active : **LisbonIA**, puis **PalermoIA**.
 
 - Quand je l'ouvre, il se réveille dans son lit, va à son bureau, relit ses notes, **vérifie Ryanair en direct**, regarde les dernières offres Google Flights, compare avec ses records, annonce le résultat, puis retourne se coucher. Chaque étape affichée correspond à une vraie opération.
 - Dessous : ses records (dans mes horaires et tous horaires) avec les liens de réservation, la courbe des prix et le journal de ses derniers passages.
@@ -41,6 +56,8 @@ Variables à mettre dans Vercel (*Settings → Environments → Production*), en
 - `GITHUB_TOKEN` : un jeton GitHub « fine-grained », limité à ce dépôt, avec **Contents en lecture seule**. Il sert à lire `data/`, qui est privé.
 
 Pour travailler sur la page en local : `npm run site`, puis http://localhost:4317 (avec un code d'essai local affiché au démarrage).
+
+Pour voir la page de PalermoIA avant mars : lancer le serveur local avec `ESCALE_MAINTENANT=2027-03-16T10:00:00Z`, `DOSSIER_DONNEES=test/fixtures/escale-demo` (données d'exemple) et, si besoin, `PORT_LOCAL=4318`.
 
 Le robot de l'agent enregistre `data/` toutes les heures : avant d'envoyer du code, récupérer ses commits avec `git pull --rebase` (ou une fois pour toutes : `git config pull.rebase true`). Vercel ne redéploie pas pour un commit de données seules, mais déploie toujours un commit de code ou une fusion.
 
@@ -88,7 +105,7 @@ Tout se trouve dans [`src/config.ts`](src/config.ts) : dates, horaires préfér�
 ## Tests
 
 ```bash
-npm test          # 71 tests
+npm test          # 108 tests
 npm run typecheck # vérification TypeScript
 ```
 
