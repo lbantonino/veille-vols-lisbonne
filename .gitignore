@@ -3,3 +3,5 @@ node_modules/
 .DS_Store
 .vercel/
 .claude/
+test/.palerme-essai-*/
+test/.depot-essai-*/
