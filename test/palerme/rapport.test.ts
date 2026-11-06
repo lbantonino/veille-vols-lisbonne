@@ -47,7 +47,7 @@ test('rapport : un seul par semaine, le suivant le lundi à 8h', () => {
 });
 
 test('message du rapport : dates, prix valise comprise, évolution, comparaison Google, liens', () => {
-  const precedent = { meilleurParPersonne: 160 } as Rapport;
+  const precedent = { semaine: '2027-W09', le: '2027-03-02T08:00:00.000Z', meilleurParPersonne: 160 } as Rapport;
   const texte = messageRapport(construireRapport({ maintenant: mardi, mission: PALERME, ryanair: semaine, google: googleIta, precedent }), PALERME);
   assert.match(texte, /PalermoIA/);
   assert.match(texte, /jeu\. 27 mai à 21:40/);
@@ -79,4 +79,35 @@ test('message de bascule : nouveau nom et rappels', () => {
   assert.match(texte, /31 mars 2027/);
   assert.match(texte, /\/setname/);
   assert.match(texte, /escale-ia\.vercel\.app/);
+});
+
+test('évolution : comparée au dernier prix connu, même après une semaine sans vol (point 1)', () => {
+  const r1 = construireRapport({ maintenant: mardi, mission: PALERME, ryanair: semaine, google: null, precedent: null }); // 152 €
+  assert.equal(r1.premier, true);
+  const r2 = construireRapport({ maintenant: new Date('2027-03-15T08:00:00Z'), mission: PALERME, ryanair: null, google: null, precedent: r1 });
+  assert.equal(r2.premier, false);
+  const r3 = construireRapport({
+    maintenant: new Date('2027-03-22T08:00:00Z'),
+    mission: PALERME,
+    ryanair: { ...semaine, prixParPersonne: 60 }, // 140 € valise comprise
+    google: null,
+    precedent: r2,
+  });
+  assert.equal(r3.evolution, -12);
+  assert.deepEqual(r3.reference, { prix: 152, le: r1.le });
+  const texte = messageRapport(r3, PALERME);
+  assert.doesNotMatch(texte, /Premier rapport/);
+  assert.match(texte, /−12,00\s€ depuis le rapport du mar\. 9 mars\./);
+
+  // Aucun prix avant : pas de « Premier rapport » non plus.
+  const sansPrix = construireRapport({ maintenant: mardi, mission: PALERME, ryanair: null, google: null, precedent: null });
+  const apres = construireRapport({ maintenant: new Date('2027-03-15T08:00:00Z'), mission: PALERME, ryanair: semaine, google: null, precedent: sansPrix });
+  assert.match(messageRapport(apres, PALERME), /Pas de comparaison : aucun prix aux rapports précédents\./);
+});
+
+test('message du rapport : supplément Ryanair inconnu, « valise non comprise » et jamais « + 0,00 € » (point 10)', () => {
+  const sansValise = { ...PALERME, valise20kgParVol: {} };
+  const texte = messageRapport(construireRapport({ maintenant: mardi, mission: sansValise, ryanair: semaine, google: null, precedent: null }), sansValise);
+  assert.match(texte, /Ryanair : 72,00\s€ \(valise non comprise\)/);
+  assert.doesNotMatch(texte, /0,00\s€ de valise/);
 });

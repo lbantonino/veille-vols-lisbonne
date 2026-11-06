@@ -78,7 +78,7 @@ function placeur(valeurs, largeur, hauteur, bornes) {
   };
 }
 
-const AEROPORTS = { CRL: 'Charleroi', BRU: 'Zaventem', LIS: 'Lisbonne' };
+const AEROPORTS = { CRL: 'Charleroi', BRU: 'Zaventem', LIS: 'Lisbonne', PMO: 'Palerme' };
 const nomAeroport = (code) => AEROPORTS[code] ?? code;
 
 /**
@@ -207,15 +207,57 @@ export function lignesSemaine(semaine) {
 }
 
 /**
+ * L'écran Ryanair de PalermoIA : la semaine vérifiée en direct ; si Ryanair ne répond pas, celle du dernier rapport,
+ * présentée comme telle (jamais comme « vérifiée à l'instant »).
+ * @param {{ semaine: { aller: { numero: string, depart: string }, retour: { numero: string, depart: string }, prixParPersonne: number } | null, verifieLe: string } | null} reponse
+ * @param {{ ryanair: { aller: { numero: string, depart: string }, retour: { numero: string, depart: string }, prixParPersonne: number } | null } | null} dernier
+ * @param {Date} maintenant
+ */
+export function ecranRyanairPalerme(reponse, dernier, maintenant) {
+  if (reponse) {
+    const age = texteAge(reponse.verifieLe, maintenant);
+    return reponse.semaine
+      ? { lignes: lignesSemaine(reponse.semaine), age: `Vérifié ${age}` }
+      : { lignes: [], age: `Aucune semaine trouvée · vérifié ${age}` };
+  }
+  const ancienne = dernier?.ryanair ?? null;
+  return { lignes: lignesSemaine(ancienne), age: ancienne ? 'Ryanair ne répond pas : semaine du dernier rapport' : 'Ryanair ne répond pas' };
+}
+
+const DIX_JOURS_MS = 10 * 24 * 3600 * 1000;
+
+/** L'évolution d'un rapport, comparée au dernier prix connu (la semaine d'avant, ou un rapport plus ancien). */
+function texteEvolutionPalerme(r) {
+  if (r.premier) return 'Premier rapport';
+  if (!r.reference) return 'Pas encore de prix pour comparer';
+  if (r.evolution === null || r.evolution === undefined) return 'Pas de comparaison cette semaine';
+  const semaineDavant = Date.parse(r.le) - Date.parse(r.reference.le) < DIX_JOURS_MS;
+  const comparaison = semaineDavant ? 'que la semaine d’avant' : `qu’au rapport du ${dateVoyage(r.reference.le.slice(0, 10))}`;
+  if (r.evolution === 0) return `Même prix ${comparaison}`;
+  return `${formaterPrix(Math.abs(r.evolution))} de ${r.evolution < 0 ? 'moins' : 'plus'} ${comparaison}`;
+}
+
+/**
+ * La ligne sous le prix du dernier rapport.
+ * @param {{ le?: string, premier?: boolean, evolution: number | null, reference?: { prix: number, le: string } | null }} rapport
+ * @param {boolean} estimation le supplément valise est encore une estimation
+ */
+export function sousTitreRapportPalerme(rapport, estimation) {
+  return `par personne, valise 20 kg comprise${estimation ? ' (estimation)' : ''} · ${texteEvolutionPalerme(rapport)}`;
+}
+
+/**
  * La phrase finale de PalermoIA : le prix trouvé en direct, comparé au dernier rapport.
  * @param {{ nouveau: number | null, dernier: number | null, difference: number | null } | null} c
  * @param {boolean} erreurRyanair
+ * @param {boolean} [estimation] le supplément valise est encore une estimation
  */
-export function conclusionPalerme(c, erreurRyanair) {
+export function conclusionPalerme(c, erreurRyanair, estimation = false) {
   if (erreurRyanair) return 'Ryanair ne répond pas en ce moment. Je réessaierai au prochain passage.';
-  if (!c || c.nouveau === null) return 'Aucune semaine trouvée chez Ryanair pour le moment.';
-  const debut = `La semaine la moins chère est à ${formaterPrix(c.nouveau)} valise comprise`;
-  if (c.difference === null) return `${debut}. Premier relevé.`;
+  if (!c) return "Je n'ai pas pu comparer cette fois-ci. Je réessaierai au prochain passage.";
+  if (c.nouveau === null) return 'Aucune semaine trouvée chez Ryanair pour le moment.';
+  const debut = `La semaine la moins chère est à ${formaterPrix(c.nouveau)} valise comprise${estimation ? ' (estimation)' : ''}`;
+  if (c.difference === null) return `${debut}. Rien à comparer pour l’instant.`;
   if (c.difference === 0) return `${debut}, même prix qu’au dernier rapport.`;
   const ecart = formaterPrix(Math.abs(c.difference));
   return c.difference < 0 ? `${debut}, ${ecart} de moins qu’au dernier rapport.` : `${debut}, ${ecart} de plus qu’au dernier rapport.`;

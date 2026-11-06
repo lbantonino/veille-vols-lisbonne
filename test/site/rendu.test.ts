@@ -4,7 +4,9 @@ import { readFileSync } from 'node:fs';
 import {
   bornesCommunes,
   conclusionPalerme,
+  ecranRyanairPalerme,
   lignesSemaine,
+  sousTitreRapportPalerme,
   cheminCourbe,
   conclusion,
   dateVoyage,
@@ -146,7 +148,53 @@ test('Palerme : la conclusion de la visite', () => {
   );
   assert.match(conclusionPalerme({ nouveau: 168, dernier: 160, difference: 8 }, false), /8,00\s€ de plus qu’au dernier rapport\.$/);
   assert.match(conclusionPalerme({ nouveau: 160, dernier: 160, difference: 0 }, false), /même prix qu’au dernier rapport\.$/);
-  assert.match(conclusionPalerme({ nouveau: 152, dernier: null, difference: null }, false), /Premier relevé\.$/);
+  assert.match(conclusionPalerme({ nouveau: 152, dernier: null, difference: null }, false), /Rien à comparer pour l’instant\.$/);
   assert.equal(conclusionPalerme({ nouveau: null, dernier: 160, difference: null }, false), 'Aucune semaine trouvée chez Ryanair pour le moment.');
   assert.equal(conclusionPalerme(null, true), 'Ryanair ne répond pas en ce moment. Je réessaierai au prochain passage.');
+});
+
+test('Palerme, page : « Palerme » en toutes lettres sur les vols (point 2)', () => {
+  const [aller] = lignesRecord([{ sens: 'aller', vols: [{ numero: 'FR6302', de: 'CRL', vers: 'PMO', depart: '2027-05-27T21:40:00' }] }]);
+  assert.deepEqual(aller, { texte: 'jeu 21:40 FR6302', trajet: 'Charleroi → Palerme' });
+});
+
+test('Palerme, page : « (estimation) » à côté de la valise tant qu’elle n’est pas mesurée (point 3)', () => {
+  assert.match(conclusionPalerme({ nouveau: 152, dernier: 160, difference: -8 }, false, true), /^La semaine la moins chère est à 152,00\s€ valise comprise \(estimation\), 8,00\s€ de moins/);
+  assert.doesNotMatch(conclusionPalerme({ nouveau: 152, dernier: 160, difference: -8 }, false, false), /estimation/);
+  const r = { premier: true, evolution: null, reference: null };
+  assert.equal(sousTitreRapportPalerme(r, true), 'par personne, valise 20 kg comprise (estimation) · Premier rapport');
+  assert.equal(sousTitreRapportPalerme(r, false), 'par personne, valise 20 kg comprise · Premier rapport');
+});
+
+test('Palerme, page : l’évolution comparée au dernier prix connu (point 1)', () => {
+  type Evolution = { premier: boolean; evolution: number | null; reference: { prix: number; le: string } | null };
+  const sous = (r: Evolution) => sousTitreRapportPalerme({ le: '2027-03-22T08:00:00Z', ...r }, false);
+  assert.match(sous({ premier: false, evolution: null, reference: null }), /Pas encore de prix pour comparer$/);
+  assert.match(sous({ premier: false, evolution: -8, reference: { prix: 160, le: '2027-03-15T08:00:00Z' } }), /8,00\s€ de moins que la semaine d’avant$/);
+  assert.match(sous({ premier: false, evolution: 0, reference: { prix: 160, le: '2027-03-15T08:00:00Z' } }), /Même prix que la semaine d’avant$/);
+  assert.match(sous({ premier: false, evolution: -12, reference: { prix: 152, le: '2027-03-09T10:00:00Z' } }), /12,00\s€ de moins qu’au rapport du mar\. 9 mars$/);
+});
+
+test('Palerme, page : phrase juste quand la comparaison échoue (point 4)', () => {
+  assert.equal(conclusionPalerme(null, false), "Je n'ai pas pu comparer cette fois-ci. Je réessaierai au prochain passage.");
+});
+
+test('Palerme, page : l’ancienne semaine n’est jamais présentée comme vérifiée à l’instant (point 5)', () => {
+  const maintenant = new Date('2027-03-16T10:00:00Z');
+  const dernier = {
+    ryanair: {
+      aller: { numero: 'FR6302', depart: '2027-04-23T21:40:00' },
+      retour: { numero: 'FR6268', depart: '2027-04-30T06:20:00' },
+      prixParPersonne: 144,
+    },
+  };
+  const rien = ecranRyanairPalerme({ semaine: null, verifieLe: '2027-03-16T10:00:00Z' }, dernier, maintenant);
+  assert.deepEqual(rien.lignes, []);
+  assert.match(rien.age, /^Aucune semaine trouvée/);
+  const enPanne = ecranRyanairPalerme(null, dernier, maintenant);
+  assert.equal(enPanne.lignes.length, 2);
+  assert.match(enPanne.age, /ne répond pas/);
+  const trouve = ecranRyanairPalerme({ semaine: dernier.ryanair, verifieLe: '2027-03-16T10:00:00Z' }, null, maintenant);
+  assert.equal(trouve.lignes.length, 2);
+  assert.match(trouve.age, /^Vérifié/);
 });

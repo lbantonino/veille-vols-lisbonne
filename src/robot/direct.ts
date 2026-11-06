@@ -129,6 +129,7 @@ export async function verifierSemaine(
 export function comparerPalerme(etat: EtatPalerme, corps: unknown): { mission: 'palerme'; nouveau: number | null; dernier: number | null; difference: number | null } {
   const brut = (corps as { semaine?: { prixParPersonne?: unknown } } | null)?.semaine?.prixParPersonne;
   const nouveau = typeof brut === 'number' && Number.isFinite(brut) && brut > 0 ? brut : null;
-  const dernier = etat.dernierRapport?.meilleurParPersonne ?? null;
+  // Le dernier prix connu : celui du dernier rapport, ou d'un rapport plus ancien si la dernière semaine n'a rien trouvé.
+  const dernier = etat.dernierRapport?.meilleurParPersonne ?? etat.dernierRapport?.reference?.prix ?? null;
   return { mission: 'palerme', nouveau, dernier, difference: nouveau !== null && dernier !== null ? arrondi(nouveau - dernier) : null };
 }

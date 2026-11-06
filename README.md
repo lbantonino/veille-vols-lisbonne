@@ -105,7 +105,7 @@ Tout se trouve dans [`src/config.ts`](src/config.ts) : dates, horaires préfér�
 ## Tests
 
 ```bash
-npm test          # 113 tests
+npm test          # 126 tests
 npm run typecheck # vérification TypeScript
 ```
 

@@ -217,3 +217,41 @@ test('rapport en attente d’une semaine passée : un rapport neuf pour la nouve
   assert.equal(messages.length, 1);
   assert.equal(JSON.parse(lignesRapports()[0]!).semaine, semaineDeRapport(lundi));
 });
+
+test('Google sans vol direct : le rapport dit pourquoi (point 6)', async () => {
+  etatBasculeFaite();
+  const messages: string[] = [];
+  await passagePalerme(new Date('2027-03-10T10:00:00Z'), deps(messages));
+  assert.match(messages[0]!, /pas de comparaison cette semaine \(aucun vol direct trouvé\)/);
+  assert.doesNotMatch(messages[0]!, /répond de nouveau/);
+});
+
+test('Ryanair de nouveau là après une panne signalée : le rapport le dit (point 7)', async () => {
+  etatBasculeFaite();
+  const messages: string[] = [];
+  const panne = deps(messages, {
+    chercherRyanair: async () => {
+      throw new Error('Ryanair a répondu 409 pour CRL');
+    },
+  });
+  for (const heure of ['10', '11', '12']) await passagePalerme(new Date(`2027-03-10T${heure}:00:00Z`), panne);
+  await passagePalerme(new Date('2027-03-10T13:00:00Z'), deps(messages));
+  assert.equal(messages.length, 2);
+  assert.match(messages[1]!, /ton rapport de la semaine/);
+  assert.match(messages[1]!, /Ryanair répond de nouveau/);
+});
+
+test('mode essai (sans Telegram) : rien n’est enregistré (point 8)', async () => {
+  const avant = { jeton: process.env.TELEGRAM_BOT_TOKEN, conversation: process.env.TELEGRAM_CHAT_ID };
+  delete process.env.TELEGRAM_BOT_TOKEN;
+  delete process.env.TELEGRAM_CHAT_ID;
+  try {
+    const { envoyer: _envoi, ...sansTelegram } = deps([]);
+    await passagePalerme(new Date('2027-03-09T09:00:00Z'), sansTelegram);
+    assert.equal(existsSync(new URL('etat.json', DOSSIER)), false);
+    assert.equal(lignesRapports().length, 0);
+  } finally {
+    if (avant.jeton !== undefined) process.env.TELEGRAM_BOT_TOKEN = avant.jeton;
+    if (avant.conversation !== undefined) process.env.TELEGRAM_CHAT_ID = avant.conversation;
+  }
+});

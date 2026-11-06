@@ -12,6 +12,7 @@ export interface InfosMission {
   robot: string;
   trajet: string;
   details: string;
+  valiseEstimee?: boolean; // Palerme : le supplément valise de 20 kg est encore une estimation
 }
 
 export interface LigneJournal {
@@ -152,6 +153,7 @@ export function resumerPalerme(etat: EtatPalerme, rapports: Rapport[], _maintena
       robot: PALERME.robot,
       trajet: PALERME.trajet,
       details: `${PALERME.adultes} adulte · valise 20 kg · ${PALERME.dureeJours} jours, départ dans 1 à 3 mois`,
+      valiseEstimee: PALERME.valiseEstimee,
     },
     dernierRapport,
     journal: rapports.slice(-TAILLE_JOURNAL).reverse(),

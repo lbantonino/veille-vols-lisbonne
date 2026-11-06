@@ -93,3 +93,18 @@ test('santé détaillée en mission Palerme : une clé sans accès au dépôt (4
   assert.equal(sante.notes, 'illisibles');
   assert.match(sante.raison, /404/);
 });
+
+test('Palerme : les notes disent que la valise est une estimation (point 3)', async () => {
+  const notes = await (await gererNotes(avecCode('/api/notes'), env, { maintenant: neufMars, lirePalerme: async () => ({ etat: etatPalermeInitial(), rapports: [] }) })).json();
+  assert.equal(notes.mission.valiseEstimee, true);
+});
+
+test('Palerme : comparaison avec le dernier prix connu si le dernier rapport n’avait pas de vol (point 1)', async () => {
+  const sansVol = { ...rapport('2027-W11', '2027-03-15T08:00:00Z', 0), meilleurParPersonne: null, reference: { prix: 160, le: '2027-03-09T08:00:00Z' } } as Rapport;
+  const etat = { ...etatPalermeInitial(), dernierRapport: sansVol };
+  const res = await gererComparer(avecCode('/api/comparer', 'POST', { semaine: { prixParPersonne: 152 } }), env, {
+    maintenant: () => new Date('2027-03-16T10:00:00Z'),
+    lirePalerme: async () => ({ etat, rapports: [] }),
+  });
+  assert.deepEqual(await res.json(), { mission: 'palerme', nouveau: 152, dernier: 160, difference: -8 });
+});

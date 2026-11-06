@@ -154,6 +154,9 @@ export function convertirSemaineRyanair(reponse: ReponseRyanair, adultes: number
   const total = (f: ReponseRyanair['fares'][number]) => f.summary?.price.value ?? f.outbound.price.value + f.inbound.price.value;
   const moinsCher = [...reponse.fares].sort((a, b) => total(a) - total(b))[0];
   if (!moinsCher) return null;
+  for (const jambe of [moinsCher.outbound, moinsCher.inbound]) {
+    if (jambe.price.currencyCode !== 'EUR') throw new Error(`Ryanair : devise inattendue ${jambe.price.currencyCode}`);
+  }
   const aller = versVol(moinsCher.outbound);
   const retour = versVol(moinsCher.inbound);
   return {

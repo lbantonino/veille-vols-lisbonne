@@ -30,7 +30,12 @@
     "google": null,
     "googleAbsent": "quota gardé en réserve",
     "meilleurParPersonne": 144,
-    "evolution": -8
+    "evolution": -8,
+    "premier": false,
+    "reference": {
+      "prix": 152,
+      "le": "2027-03-09T08:00:00.000Z"
+    }
   },
   "echecs": {
     "ryanair": 0,

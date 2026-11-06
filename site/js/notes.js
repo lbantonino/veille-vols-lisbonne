@@ -8,6 +8,7 @@ import {
   lignesRecord,
   momentJournal,
   pointMinimum,
+  sousTitreRapportPalerme,
   texteAge,
   texteDernierPassage,
 } from './rendu.js';
@@ -257,13 +258,7 @@ export function contenuCourbePalerme(notes) {
   };
 }
 
-function texteEvolution(evolution) {
-  if (evolution === null || evolution === undefined) return 'Premier rapport';
-  if (evolution === 0) return 'Même prix que la semaine d’avant';
-  return evolution < 0 ? `${formaterPrix(-evolution)} de moins que la semaine d’avant` : `${formaterPrix(evolution)} de plus que la semaine d’avant`;
-}
-
-function blocRapport(rapport) {
+function blocRapport(rapport, estimation) {
   const bloc = el('article', 'record');
   if (!rapport?.ryanair) {
     bloc.append(el('h3', 'record-titre', 'Dernier rapport'));
@@ -273,7 +268,7 @@ function blocRapport(rapport) {
   const { aller, retour } = rapport.ryanair;
   bloc.append(el('h3', 'record-titre', `Du ${dateVoyage(aller.depart.slice(0, 10))} au ${dateVoyage(retour.depart.slice(0, 10))}`));
   bloc.append(el('p', 'record-prix', rapport.meilleurParPersonne !== null ? formaterPrix(rapport.meilleurParPersonne) : '—'));
-  bloc.append(el('p', 'record-sous', `par personne, valise 20 kg comprise · ${texteEvolution(rapport.evolution)}`));
+  bloc.append(el('p', 'record-sous', sousTitreRapportPalerme(rapport, estimation)));
   const liste = el('ul', 'record-vols');
   for (const ligne of lignesRecord([{ sens: 'aller', vols: [aller] }, { sens: 'retour', vols: [retour] }])) {
     if ('note' in ligne) continue;
@@ -340,7 +335,7 @@ function afficherNotesPalerme(notes) {
     el('p', 'bloc-sous', 'La semaine la moins chère pour Palerme, valise de 20 kg comprise'),
   );
   const rangee = el('div', 'records');
-  rangee.append(blocRapport(notes.dernierRapport));
+  rangee.append(blocRapport(notes.dernierRapport, notes.mission?.valiseEstimee === true));
   meilleurs.append(rangee);
 
   dessinerSeries({ horaires: meilleursDesRapports(notes), tous: [] });

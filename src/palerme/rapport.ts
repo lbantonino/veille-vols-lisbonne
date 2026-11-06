@@ -18,7 +18,10 @@ export interface Rapport {
   google: (OffreTrajetGoogle & PrixValise) | null;
   googleAbsent?: string;
   meilleurParPersonne: number | null;
-  evolution: number | null;
+  evolution: number | null; // écart avec `reference`
+  premier: boolean; // aucun rapport avant celui-ci
+  reference: { prix: number; le: string } | null; // le dernier prix connu avant ce rapport, même après une semaine sans vol
+  apresPanneRyanair?: true; // Ryanair répond de nouveau après une panne qui t'a été signalée
 }
 
 // Ajoute la valise de 20 kg (aller + retour) quand on connaît le supplément de la compagnie.
@@ -35,12 +38,15 @@ export function construireRapport(p: {
   google: OffreTrajetGoogle | null;
   googleAbsent?: string;
   precedent: Rapport | null;
+  apresPanneRyanair?: boolean;
 }): Rapport {
   const ryanair = p.ryanair ? { ...p.ryanair, ...avecValise(p.ryanair.prixParPersonne, 'Ryanair', p.mission) } : null;
   const google = p.google ? { ...p.google, ...avecValise(p.google.prixParPersonne, p.google.compagnie, p.mission) } : null;
   const comparables = [ryanair, google].filter((o): o is NonNullable<typeof o> => o !== null && o.valiseParPersonne !== null);
   const meilleur = comparables.length ? Math.min(...comparables.map((o) => o.prixParPersonne)) : null;
-  const avant = p.precedent?.meilleurParPersonne ?? null;
+  const precedent = p.precedent;
+  const reference =
+    precedent === null ? null : precedent.meilleurParPersonne !== null ? { prix: precedent.meilleurParPersonne, le: precedent.le } : (precedent.reference ?? null);
   return {
     semaine: semaineDeRapport(p.maintenant),
     le: p.maintenant.toISOString(),
@@ -49,7 +55,10 @@ export function construireRapport(p: {
     google,
     ...(p.googleAbsent ? { googleAbsent: p.googleAbsent } : {}),
     meilleurParPersonne: meilleur,
-    evolution: meilleur !== null && avant !== null ? arrondi(meilleur - avant) : null,
+    evolution: meilleur !== null && reference !== null ? arrondi(meilleur - reference.prix) : null,
+    premier: precedent === null,
+    reference,
+    ...(p.apresPanneRyanair ? { apresPanneRyanair: true as const } : {}),
   };
 }
 

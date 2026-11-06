@@ -3,7 +3,7 @@
 // Mission Lisbonne (LisbonIA) ou mission Palerme (PalermoIA), selon les notes reçues.
 // Chaque étape affichée correspond à une vraie opération.
 import { appeler } from './api.js';
-import { conclusion, conclusionPalerme, formaterPrix, heureBruxelles, lignesEcran, lignesSemaine, texteAge, texteDernierPassage } from './rendu.js';
+import { conclusion, conclusionPalerme, ecranRyanairPalerme, formaterPrix, heureBruxelles, lignesEcran, texteAge, texteDernierPassage } from './rendu.js';
 import { afficherNotes, contenuCourbe, contenuCourbePalerme } from './notes.js';
 
 const LIBELLE_MIN_MS = 1200; // le temps de lire chaque étape
@@ -114,6 +114,7 @@ async function deroulerVisite(scene) {
 async function visitePalerme(scene, notes) {
   scene.allumer('courbe', contenuCourbePalerme(notes));
   const dernier = notes.dernierRapport;
+  const estimation = notes.mission?.valiseEstimee === true;
 
   // 2. Ryanair, en direct : la semaine la moins chère sur la période du rapport
   let reponse = null;
@@ -125,17 +126,14 @@ async function visitePalerme(scene, notes) {
     erreurRyanair = true;
   }
   const semaine = reponse?.semaine ?? null;
-  scene.allumer('ryanair', {
-    lignes: lignesSemaine(semaine ?? dernier?.ryanair ?? null),
-    age: reponse ? `Vérifié ${texteAge(reponse.verifieLe, new Date())}` : 'Ryanair ne répond pas : semaine du dernier rapport',
-  });
+  scene.allumer('ryanair', ecranRyanairPalerme(reponse, dernier, new Date()));
 
   // 3. Google Flights : la comparaison du dernier rapport (aucun appel, pour ne pas toucher au quota)
   const g = dernier?.google ?? null;
   await scene.dire(g && dernier ? `Je regarde Google Flights… dernier rapport ${texteAge(dernier.le, new Date())}` : 'Google Flights : pas de comparaison au dernier rapport');
   scene.allumer('google', {
     lignes: g ? [{ texte: `${g.compagnie} ${g.vols?.[0]?.numero ?? ''}`.trim(), prix: formaterPrix(g.prixParPersonne), meilleur: false }] : [],
-    age: g ? (g.valiseParPersonne === null ? 'Valise non comprise' : 'Valise comprise') : 'Pas de comparaison',
+    age: g ? (g.valiseParPersonne === null ? 'Valise non comprise' : `Valise comprise${estimation ? ' (estimation)' : ''}`) : 'Pas de comparaison',
   });
   await attendre(LIBELLE_MIN_MS);
 
@@ -154,7 +152,7 @@ async function visitePalerme(scene, notes) {
   }
 
   // 5. Le verdict, puis au lit
-  await scene.dire(conclusionPalerme(comparaison, erreurRyanair));
+  await scene.dire(conclusionPalerme(comparaison, erreurRyanair, estimation));
   await attendre(CONCLUSION_MS);
   await retourAuLit(scene, notes);
 }

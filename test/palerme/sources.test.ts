@@ -57,3 +57,12 @@ test('Google : l’offre la moins chère de la semaine, ou rien', async () => {
   assert.equal(convertirTrajetGoogle({ error: "Google Flights hasn't returned any results for this query." }, 1), null);
   assert.throws(() => convertirTrajetGoogle({ error: 'Invalid API key.' }, 1), /Invalid API key/);
 });
+
+test('Ryanair : une semaine dans une autre devise que l’euro est refusée (point 9)', () => {
+  const enLivres = structuredClone(semaine);
+  for (const f of enLivres.fares) {
+    f.outbound.price.currencyCode = 'GBP';
+    f.inbound.price.currencyCode = 'GBP';
+  }
+  assert.throws(() => convertirSemaineRyanair(enLivres, 1), /devise inattendue GBP/);
+});

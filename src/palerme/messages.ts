@@ -7,10 +7,18 @@ import type { Vol } from '../types.ts';
 const ligneVol = (titre: string, v: Vol): string =>
   `${titre} : ${dateHeure(v.depart)} · ${nomAeroport(v.de)} → ${nomAeroport(v.vers)} · ${html(v.compagnie)} ${html(v.numero)}`;
 
-function texteEvolution(evolution: number | null): string {
-  if (evolution === null) return 'Premier rapport.';
-  if (evolution === 0) return 'Même prix que la semaine dernière.';
-  return evolution < 0 ? `−${prix(-evolution)} depuis la semaine dernière.` : `+${prix(evolution)} depuis la semaine dernière.`;
+const DIX_JOURS_MS = 10 * 24 * 3600 * 1000;
+
+// L'évolution par rapport au dernier prix connu (la semaine dernière, ou un rapport plus ancien si une semaine n'a rien trouvé).
+function texteEvolution(r: Rapport): string {
+  if (r.premier) return 'Premier rapport.';
+  if (r.reference === null) return 'Pas de comparaison : aucun prix aux rapports précédents.';
+  if (r.evolution === null) return 'Pas de comparaison cette semaine.';
+  const semaineDerniere = Date.parse(r.le) - Date.parse(r.reference.le) < DIX_JOURS_MS;
+  const rapportDu = `rapport du ${dateHeure(r.reference.le.slice(0, 10))}`;
+  if (r.evolution === 0) return semaineDerniere ? 'Même prix que la semaine dernière.' : `Même prix qu’au ${rapportDu}.`;
+  const ecart = `${r.evolution < 0 ? '−' : '+'}${prix(Math.abs(r.evolution))}`;
+  return `${ecart} ${semaineDerniere ? 'depuis la semaine dernière' : `depuis le ${rapportDu}`}.`;
 }
 
 export function messageRapport(r: Rapport, m: MissionPalerme): string {
@@ -22,16 +30,19 @@ export function messageRapport(r: Rapport, m: MissionPalerme): string {
   const estimation = m.valiseEstimee ? ' (estimation)' : '';
   const lignes = [
     titre,
+    ...(r.apresPanneRyanair ? ['✅ Ryanair répond de nouveau.'] : []),
     `La semaine la moins chère pour Palerme (${m.dureeJours} jours, ${periode}) :`,
     '',
     r.meilleurParPersonne !== null
       ? `<b>${prix(r.meilleurParPersonne)}</b> par personne, valise 20 kg comprise${estimation}`
       : 'Pas de prix valise comprise cette semaine.',
-    texteEvolution(r.evolution),
+    texteEvolution(r),
     '',
     ligneVol('🛫 Aller', r.ryanair.aller),
     ligneVol('🛬 Retour', r.ryanair.retour),
-    `Ryanair : ${prix(r.ryanair.prixParPersonne)} valise comprise${estimation} (${prix(r.ryanair.prixHorsValise)} + ${prix(r.ryanair.valiseParPersonne ?? 0)} de valise)`,
+    r.ryanair.valiseParPersonne === null
+      ? `Ryanair : ${prix(r.ryanair.prixHorsValise)} (valise non comprise)`
+      : `Ryanair : ${prix(r.ryanair.prixParPersonne)} valise comprise${estimation} (${prix(r.ryanair.prixHorsValise)} + ${prix(r.ryanair.valiseParPersonne)} de valise)`,
   ];
   if (r.google) {
     const vol = r.google.vols[0];
