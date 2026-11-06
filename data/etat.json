@@ -27,7 +27,16 @@
             ],
             "lien": "https://www.google.com/travel/flights?hl=fr&gl=be&curr=EUR&tfs=CBwQAhotEgoyMDI3LTAzLTA1KABAAEgLagcIARIDQ1JMagcIARIDQlJVcgcIARIDTElTGi0SCjIwMjctMDMtMDgoAEARSBdqBwgBEgNMSVNyBwgBEgNDUkxyBwgBEgNCUlVAAUABSAFqAhACcAGYAQE&tfu=EgIIAQ",
             "observeLe": "2026-11-04T20:47:15.071Z",
-            "prixSoloParPersonne": 206
+            "prixSoloParPersonne": 206,
+            "volsRetour": [
+              {
+                "compagnie": "Tap Air Portugal",
+                "numero": "TP 646",
+                "de": "LIS",
+                "vers": "BRU",
+                "depart": "2027-03-08T19:55"
+              }
+            ]
           }
         ]
       }
@@ -309,7 +318,16 @@
         }
       ],
       "lien": "https://www.google.com/travel/flights?hl=fr&gl=be&curr=EUR&tfs=CBwQAhotEgoyMDI3LTAzLTA1KABAAEgLagcIARIDQ1JMagcIARIDQlJVcgcIARIDTElTGi0SCjIwMjctMDMtMDgoAEARSBdqBwgBEgNMSVNyBwgBEgNDUkxyBwgBEgNCUlVAAUABSAFqAhACcAGYAQE&tfu=EgIIAQ",
-      "observeLe": "2026-11-05T22:41:23.816Z"
+      "observeLe": "2026-11-05T22:41:23.816Z",
+      "volsRetour": [
+        {
+          "compagnie": "Tap Air Portugal",
+          "numero": "TP 646",
+          "de": "LIS",
+          "vers": "BRU",
+          "depart": "2027-03-08T19:55"
+        }
+      ]
     },
     {
       "source": "google",
