@@ -229,3 +229,67 @@ export async function lireQuotaSerpApi(cle: string): Promise<number> {
   if (typeof restant !== 'number') throw new Error('SerpApi : quota restant illisible');
   return restant;
 }
+
+// ---------- Escale : les mêmes dates chez les autres compagnies (mission Palerme) ----------
+
+export interface Trajet {
+  depuis: string[];
+  vers: string;
+  aller: string; // AAAA-MM-JJ
+  retour: string;
+  adultes: number;
+}
+
+export interface OffreTrajetGoogle {
+  compagnie: string;
+  vols: Vol[]; // l'aller
+  prixParPersonne: number; // aller-retour, hors valise en soute
+  lien: string;
+}
+
+// Aller-retour direct pour des dates fixées. bags=0 : la valise de 20 kg va en soute, son prix est ajouté à part.
+export function parametresTrajetGoogle(t: Trajet, cle: string): URLSearchParams {
+  return new URLSearchParams({
+    engine: 'google_flights',
+    type: '1',
+    departure_id: t.depuis.join(','),
+    arrival_id: t.vers,
+    outbound_date: t.aller,
+    return_date: t.retour,
+    adults: String(t.adultes),
+    bags: '0',
+    stops: '1',
+    currency: 'EUR',
+    hl: reglages.langue,
+    gl: reglages.pays,
+    api_key: cle,
+  });
+}
+
+export function convertirTrajetGoogle(reponse: ReponseGoogle, adultes: number): OffreTrajetGoogle | null {
+  if (reponse.error) {
+    if (/hasn't returned any results/i.test(reponse.error)) return null;
+    throw new Error(`SerpApi : ${reponse.error}`);
+  }
+  const diviseur = reglages.prixEstTotalDuGroupe ? adultes : 1;
+  const moinsCher = [...(reponse.best_flights ?? []), ...(reponse.other_flights ?? [])]
+    .filter((r): r is ResultatGoogle & { price: number } => typeof r.price === 'number' && r.flights.length > 0)
+    .sort((a, b) => a.price - b.price)[0];
+  if (!moinsCher) return null;
+  const vols = versVols(moinsCher.flights);
+  return {
+    compagnie: vols[0]!.compagnie,
+    vols,
+    prixParPersonne: arrondi(moinsCher.price / diviseur),
+    lien: reponse.search_metadata?.google_flights_url ?? 'https://www.google.com/travel/flights',
+  };
+}
+
+export async function chercherTrajetGoogle(t: Trajet, cle: string): Promise<OffreTrajetGoogle | null> {
+  const reponse = await fetch(`https://serpapi.com/search.json?${parametresTrajetGoogle(t, cle)}`, {
+    signal: AbortSignal.timeout(60_000),
+  });
+  const json = (await reponse.json()) as ReponseGoogle;
+  if (!reponse.ok && !json.error) throw new Error(`SerpApi a répondu ${reponse.status}`);
+  return convertirTrajetGoogle(json, t.adultes);
+}
