@@ -16,7 +16,7 @@ export function dateHeure(iso: string): string {
   return heure ? `${texte} à ${heure.slice(0, 5)}` : texte;
 }
 
-const AEROPORTS: Record<string, string> = { CRL: 'Charleroi', BRU: 'Zaventem', LIS: 'Lisbonne' };
+const AEROPORTS: Record<string, string> = { CRL: 'Charleroi', BRU: 'Zaventem', LIS: 'Lisbonne', PMO: 'Palerme' };
 
 export const nomAeroport = (code: string): string => AEROPORTS[code] ?? code;
 
