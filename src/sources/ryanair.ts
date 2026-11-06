@@ -1,9 +1,10 @@
 // Ryanair publie ses tarifs les plus bas via une adresse non officielle mais publique, sans clé
 // ni limite connue. On reste raisonnable : 4 appels par heure.
-import type { Offre } from '../types.ts';
+import type { Offre, Vol } from '../types.ts';
 import { voyage, bagages, horaires, ryanair as reglages } from '../config.ts';
 import { arrondi } from '../format.ts';
 import { minuteAvant, volDansHoraires } from '../horaires.ts';
+import { plusJours } from '../missions.ts';
 
 const BASE = 'https://www.ryanair.com/api/farfnd/v4/roundTripFares';
 const NAVIGATEUR =
@@ -18,7 +19,7 @@ interface JambeRyanair {
 }
 
 export interface ReponseRyanair {
-  fares: { outbound: JambeRyanair; inbound: JambeRyanair }[];
+  fares: { outbound: JambeRyanair; inbound: JambeRyanair; summary?: { price: { value: number } } }[];
 }
 
 export function lienRyanair(de: string, vers: string, aller: string, adultes: number, retour?: string): string {
@@ -130,4 +131,69 @@ export async function chercherRyanair(maintenant: Date): Promise<Offre[]> {
     }
   }
   return offres;
+}
+
+// ---------- Escale : la semaine la moins chère sur une période (mission Palerme) ----------
+
+export interface SemaineRyanair {
+  aller: Vol;
+  retour: Vol;
+  prixParPersonne: number; // aller-retour, hors valise
+  lien: string;
+}
+
+const versVol = (j: JambeRyanair): Vol => ({
+  compagnie: 'Ryanair',
+  numero: j.flightNumber,
+  de: j.departureAirport.iataCode,
+  vers: j.arrivalAirport.iataCode,
+  depart: j.departureDate,
+});
+
+export function convertirSemaineRyanair(reponse: ReponseRyanair, adultes: number): SemaineRyanair | null {
+  const total = (f: ReponseRyanair['fares'][number]) => f.summary?.price.value ?? f.outbound.price.value + f.inbound.price.value;
+  const moinsCher = [...reponse.fares].sort((a, b) => total(a) - total(b))[0];
+  if (!moinsCher) return null;
+  const aller = versVol(moinsCher.outbound);
+  const retour = versVol(moinsCher.inbound);
+  return {
+    aller,
+    retour,
+    prixParPersonne: arrondi(total(moinsCher) / adultes),
+    lien: lienRyanair(aller.de, aller.vers, aller.depart.slice(0, 10), adultes, retour.depart.slice(0, 10)),
+  };
+}
+
+// Une requête par aéroport de départ : Ryanair renvoie lui-même l'aller-retour le moins cher de la période.
+export async function chercherSemaineRyanair(p: {
+  depuis: string[];
+  vers: string;
+  debut: string; // premier départ possible (AAAA-MM-JJ)
+  fin: string; // dernier départ possible
+  dureeJours: number;
+  adultes: number;
+}): Promise<SemaineRyanair | null> {
+  const trouvees: SemaineRyanair[] = [];
+  for (const origine of p.depuis) {
+    const q = new URLSearchParams({
+      departureAirportIataCode: origine,
+      arrivalAirportIataCode: p.vers,
+      outboundDepartureDateFrom: p.debut,
+      outboundDepartureDateTo: p.fin,
+      inboundDepartureDateFrom: p.debut,
+      inboundDepartureDateTo: plusJours(p.fin, p.dureeJours),
+      durationFrom: String(p.dureeJours),
+      durationTo: String(p.dureeJours),
+      market: reglages.marche,
+      adultPaxCount: String(p.adultes),
+    });
+    const reponse = await fetch(`${BASE}?${q}`, {
+      headers: { 'user-agent': NAVIGATEUR, accept: 'application/json' },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!reponse.ok) throw new Error(`Ryanair a répondu ${reponse.status} pour ${origine}`);
+    const semaine = convertirSemaineRyanair((await reponse.json()) as ReponseRyanair, p.adultes);
+    if (semaine) trouvees.push(semaine);
+  }
+  return trouvees.sort((a, b) => a.prixParPersonne - b.prixParPersonne)[0] ?? null;
 }
