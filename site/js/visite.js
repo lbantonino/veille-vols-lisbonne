@@ -1,9 +1,10 @@
-// Une visite : LisbonIA se réveille, relit ses notes, vérifie Ryanair en direct,
+// Une visite : le robot se réveille, relit ses notes, vérifie Ryanair en direct,
 // regarde Google Flights (sans l'appeler), compare, annonce le résultat et retourne se coucher.
+// Mission Lisbonne (LisbonIA) ou mission Palerme (PalermoIA), selon les notes reçues.
 // Chaque étape affichée correspond à une vraie opération.
 import { appeler } from './api.js';
-import { conclusion, heureBruxelles, lignesEcran, texteAge, texteDernierPassage } from './rendu.js';
-import { afficherNotes, contenuCourbe } from './notes.js';
+import { conclusion, conclusionPalerme, formaterPrix, heureBruxelles, lignesEcran, lignesSemaine, texteAge, texteDernierPassage } from './rendu.js';
+import { afficherNotes, contenuCourbe, contenuCourbePalerme } from './notes.js';
 
 const LIBELLE_MIN_MS = 1200; // le temps de lire chaque étape
 const CONCLUSION_MS = 4500;
@@ -21,6 +22,7 @@ async function pendant(scene, texte, promesse) {
 
 function phraseDeRepos(notes) {
   if (!notes?.dernierPassage) return 'Zzz…';
+  if (notes.mission?.id === 'palerme') return `Zzz… Dernier rapport : ${texteDernierPassage(notes.dernierPassage, new Date())}`;
   const prochain = notes.prochainPassage ? ` · prochain vers ${heureBruxelles(notes.prochainPassage)}` : '';
   return `Zzz… Dernier passage de l'agent : ${texteDernierPassage(notes.dernierPassage, new Date())}${prochain}`;
 }
@@ -51,6 +53,10 @@ async function deroulerVisite(scene) {
   }
   document.getElementById('cartes').hidden = false;
   afficherNotes(notes);
+  if (notes.mission?.id === 'palerme') {
+    await visitePalerme(scene, notes);
+    return;
+  }
   scene.allumer('courbe', contenuCourbe(notes));
 
   if (notes.termine) {
@@ -100,6 +106,55 @@ async function deroulerVisite(scene) {
 
   // 5. Le verdict, puis au lit
   await scene.dire(conclusion(comparaison, erreurRyanair));
+  await attendre(CONCLUSION_MS);
+  await retourAuLit(scene, notes);
+}
+
+/** La suite de la visite pour PalermoIA : la semaine la moins chère en direct, comparée au dernier rapport. */
+async function visitePalerme(scene, notes) {
+  scene.allumer('courbe', contenuCourbePalerme(notes));
+  const dernier = notes.dernierRapport;
+
+  // 2. Ryanair, en direct : la semaine la moins chère sur la période du rapport
+  let reponse = null;
+  let erreurRyanair = false;
+  try {
+    reponse = await pendant(scene, 'Je cherche la semaine la moins chère chez Ryanair…', appeler('/api/ryanair', { methode: 'POST' }));
+  } catch (e) {
+    if (e.message === 'code') return;
+    erreurRyanair = true;
+  }
+  const semaine = reponse?.semaine ?? null;
+  scene.allumer('ryanair', {
+    lignes: lignesSemaine(semaine ?? dernier?.ryanair ?? null),
+    age: reponse ? `Vérifié ${texteAge(reponse.verifieLe, new Date())}` : 'Ryanair ne répond pas : semaine du dernier rapport',
+  });
+
+  // 3. Google Flights : la comparaison du dernier rapport (aucun appel, pour ne pas toucher au quota)
+  const g = dernier?.google ?? null;
+  await scene.dire(g && dernier ? `Je regarde Google Flights… dernier rapport ${texteAge(dernier.le, new Date())}` : 'Google Flights : pas de comparaison au dernier rapport');
+  scene.allumer('google', {
+    lignes: g ? [{ texte: `${g.compagnie} ${g.vols?.[0]?.numero ?? ''}`.trim(), prix: formaterPrix(g.prixParPersonne), meilleur: false }] : [],
+    age: g ? (g.valiseParPersonne === null ? 'Valise non comprise' : 'Valise comprise') : 'Pas de comparaison',
+  });
+  await attendre(LIBELLE_MIN_MS);
+
+  // 4. La comparaison avec le dernier rapport
+  let comparaison = null;
+  if (!erreurRyanair) {
+    try {
+      comparaison = await pendant(
+        scene,
+        'Je compare avec mon dernier rapport…',
+        appeler('/api/comparer', { methode: 'POST', corps: { semaine: semaine ? { prixParPersonne: semaine.prixParPersonne } : null } }),
+      );
+    } catch (e) {
+      if (e.message === 'code') return;
+    }
+  }
+
+  // 5. Le verdict, puis au lit
+  await scene.dire(conclusionPalerme(comparaison, erreurRyanair));
   await attendre(CONCLUSION_MS);
   await retourAuLit(scene, notes);
 }

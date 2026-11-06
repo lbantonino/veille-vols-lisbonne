@@ -2,9 +2,17 @@
 import { creerScene } from './scene.js';
 import { memoriserCode, obtenirCode, quandCodeRefuse } from './api.js';
 import { lancerVisite } from './visite.js';
-import { masquerNotes } from './notes.js';
+import { appliquerNom, masquerNotes } from './notes.js';
 
 const RETOUR_APRES_MS = 10 * 60_000;
+
+// Le nom du robot de la mission active (LisbonIA, puis PalermoIA) : public, connu même sans code.
+fetch('/api/sante', { cache: 'no-store' })
+  .then((r) => r.json())
+  .then((sante) => {
+    if (typeof sante.robot === 'string') appliquerNom(sante.robot);
+  })
+  .catch(() => {});
 
 const scene = creerScene(/** @type {HTMLElement} */ (document.querySelector('.bureau')));
 const formulaire = /** @type {HTMLFormElement} */ (document.getElementById('acces'));

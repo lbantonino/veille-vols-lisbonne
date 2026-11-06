@@ -1,0 +1,39 @@
+{
+  "basculeAnnonceeLe": "2027-03-09T08:00:00.000Z",
+  "dernierRapport": {
+    "semaine": "2027-W11",
+    "le": "2027-03-15T07:30:00.000Z",
+    "fenetre": {
+      "debut": "2027-04-14",
+      "fin": "2027-06-13"
+    },
+    "ryanair": {
+      "aller": {
+        "compagnie": "Ryanair",
+        "numero": "FR6302",
+        "de": "CRL",
+        "vers": "PMO",
+        "depart": "2027-04-23T21:40:00"
+      },
+      "retour": {
+        "compagnie": "Ryanair",
+        "numero": "FR6268",
+        "de": "PMO",
+        "vers": "CRL",
+        "depart": "2027-04-30T06:20:00"
+      },
+      "prixParPersonne": 144,
+      "lien": "https://www.ryanair.com/be/fr",
+      "prixHorsValise": 64,
+      "valiseParPersonne": 80
+    },
+    "google": null,
+    "googleAbsent": "quota gardé en réserve",
+    "meilleurParPersonne": 144,
+    "evolution": -8
+  },
+  "echecs": {
+    "ryanair": 0,
+    "google": 0
+  }
+}

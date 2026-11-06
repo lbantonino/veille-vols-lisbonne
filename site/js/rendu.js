@@ -190,3 +190,33 @@ export function conclusion(c, erreurRyanair) {
     ? `Pas de nouveau record. Meilleur prix dans tes horaires : ${formaterPrix(horaires.prixParPersonne)}.`
     : 'Pas de nouveau record.';
 }
+
+// ---------- Mission Palerme ----------
+
+/**
+ * Les deux lignes d'écran de la semaine trouvée : l'aller avec le prix (valise comprise), puis le retour.
+ * @param {{ aller: { numero: string, depart: string }, retour: { numero: string, depart: string }, prixParPersonne: number } | null} semaine
+ * @returns {{ texte: string, prix: string, meilleur: boolean }[]}
+ */
+export function lignesSemaine(semaine) {
+  if (!semaine) return [];
+  return [
+    { texte: `${jourEtHeure(semaine.aller.depart)} ${semaine.aller.numero}`, prix: formaterPrix(semaine.prixParPersonne), meilleur: true },
+    { texte: `${jourEtHeure(semaine.retour.depart)} ${semaine.retour.numero}`, prix: 'retour', meilleur: false },
+  ];
+}
+
+/**
+ * La phrase finale de PalermoIA : le prix trouvé en direct, comparé au dernier rapport.
+ * @param {{ nouveau: number | null, dernier: number | null, difference: number | null } | null} c
+ * @param {boolean} erreurRyanair
+ */
+export function conclusionPalerme(c, erreurRyanair) {
+  if (erreurRyanair) return 'Ryanair ne répond pas en ce moment. Je réessaierai au prochain passage.';
+  if (!c || c.nouveau === null) return 'Aucune semaine trouvée chez Ryanair pour le moment.';
+  const debut = `La semaine la moins chère est à ${formaterPrix(c.nouveau)} valise comprise`;
+  if (c.difference === null) return `${debut}. Premier relevé.`;
+  if (c.difference === 0) return `${debut}, même prix qu’au dernier rapport.`;
+  const ecart = formaterPrix(Math.abs(c.difference));
+  return c.difference < 0 ? `${debut}, ${ecart} de moins qu’au dernier rapport.` : `${debut}, ${ecart} de plus qu’au dernier rapport.`;
+}

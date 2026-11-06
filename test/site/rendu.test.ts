@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   bornesCommunes,
+  conclusionPalerme,
+  lignesSemaine,
   cheminCourbe,
   conclusion,
   dateVoyage,
@@ -122,4 +124,29 @@ test('record : l’aller et le retour quand Google les a donnés, sinon « retou
     { texte: 'ven 06:00 TP 647', trajet: 'Zaventem → Lisbonne' },
     { note: 'Retour au choix sur Google Flights' },
   ]);
+});
+
+test('Palerme : les lignes de la semaine trouvée (aller puis retour)', () => {
+  const lignes = lignesSemaine({
+    aller: { numero: 'FR6302', depart: '2027-05-27T21:40:00' },
+    retour: { numero: 'FR6268', depart: '2027-06-03T06:20:00' },
+    prixParPersonne: 152,
+  });
+  assert.equal(lignes.length, 2);
+  assert.equal(lignes[0]!.texte, 'jeu 21:40 FR6302');
+  assert.equal(lignes[1]!.texte, 'jeu 06:20 FR6268');
+  assert.match(lignes[0]!.prix, /152,00\s€/);
+  assert.deepEqual(lignesSemaine(null), []);
+});
+
+test('Palerme : la conclusion de la visite', () => {
+  assert.match(
+    conclusionPalerme({ nouveau: 152, dernier: 160, difference: -8 }, false),
+    /^La semaine la moins chère est à 152,00\s€ valise comprise, 8,00\s€ de moins qu’au dernier rapport\.$/,
+  );
+  assert.match(conclusionPalerme({ nouveau: 168, dernier: 160, difference: 8 }, false), /8,00\s€ de plus qu’au dernier rapport\.$/);
+  assert.match(conclusionPalerme({ nouveau: 160, dernier: 160, difference: 0 }, false), /même prix qu’au dernier rapport\.$/);
+  assert.match(conclusionPalerme({ nouveau: 152, dernier: null, difference: null }, false), /Premier relevé\.$/);
+  assert.equal(conclusionPalerme({ nouveau: null, dernier: 160, difference: null }, false), 'Aucune semaine trouvée chez Ryanair pour le moment.');
+  assert.equal(conclusionPalerme(null, true), 'Ryanair ne répond pas en ce moment. Je réessaierai au prochain passage.');
 });

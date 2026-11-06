@@ -5,3 +5,4 @@ node_modules/
 .claude/
 test/.palerme-essai-*/
 test/.depot-essai-*/
+test/fixtures/escale-demo/demo.env

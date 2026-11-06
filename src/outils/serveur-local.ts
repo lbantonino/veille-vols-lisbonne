@@ -7,7 +7,7 @@ import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { gererComparer, gererNotes, gererRyanair, gererSante, type Dependances, type EnvRobot } from '../robot/http.ts';
 
-const PORT = 4317;
+const PORT = Number(process.env.PORT_LOCAL ?? 4317);
 const SITE = fileURLToPath(new URL('../../site/', import.meta.url));
 const CODE_LOCAL = 'code-local-essai-2026'; // valeur d'essai, uniquement pour ce serveur local
 

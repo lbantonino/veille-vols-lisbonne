@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#0a1222">
-  <title>LisbonIA</title>
+  <title>Escale</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Figtree:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
@@ -16,17 +16,17 @@
     <header class="entete">
       <p class="marque">
         <svg class="marque-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13.5 21 10.8v2.4L3 15.9Z M10 12.4l3.6-7.2h2.1l-1.5 7.2Z M10 14.2l3.6 6.6h2.1l-1.5-6.6Z"/></svg>
-        LisbonIA
+        <span class="nom-robot">Escale</span>
       </p>
       <p class="entete-sous" id="entete-sous">Ton agent de veille des vols</p>
       <p class="statut" id="statut" hidden></p>
     </header>
 
     <main>
-      <section class="bureau" aria-label="Le bureau de LisbonIA">
+      <section class="bureau" aria-label="Le bureau du robot">
         <figure class="scene" id="scene" data-etat="dort">
           <svg class="scene-svg" viewBox="0 0 400 250" role="img" aria-labelledby="scene-titre">
-            <title id="scene-titre">LisbonIA à son bureau, entouré des pages de prix qu'il surveille, avec son lit au fond de la pièce</title>
+            <title id="scene-titre">Le robot à son bureau, entouré des pages de prix qu'il surveille, avec son lit au fond de la pièce</title>
             <defs>
               <linearGradient id="d-mur" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0" style="stop-color: var(--mur-haut)"/>
@@ -63,7 +63,7 @@
               <g class="ecran" data-ecran="ryanair">
                 <rect class="ecran-cadre" x="0.5" y="0.5" width="109" height="71" rx="6"/>
                 <path class="ecran-tete" d="M0.5 13 V6.5 a6 6 0 0 1 6 -6 h97 a6 6 0 0 1 6 6 V13 Z"/>
-                <text class="ecran-titre" x="6" y="9.2">Ryanair · CRL ↔ LIS</text>
+                <text class="ecran-titre" id="ecran-titre-ryanair" x="6" y="9.2">Ryanair · CRL ↔ LIS</text>
                 <rect class="balayage" x="3" y="17" width="104" height="11" rx="3"/>
                 <g class="ecran-lignes"></g>
               </g>
@@ -87,7 +87,7 @@
               <g class="ecran" data-ecran="google">
                 <rect class="ecran-cadre" x="0.5" y="0.5" width="109" height="71" rx="6"/>
                 <path class="ecran-tete" d="M0.5 13 V6.5 a6 6 0 0 1 6 -6 h97 a6 6 0 0 1 6 6 V13 Z"/>
-                <text class="ecran-titre" x="6" y="9.2">Google Flights · LIS</text>
+                <text class="ecran-titre" id="ecran-titre-google" x="6" y="9.2">Google Flights · LIS</text>
                 <rect class="balayage" x="3" y="17" width="104" height="11" rx="3"/>
                 <g class="ecran-lignes"></g>
               </g>
@@ -106,7 +106,7 @@
               <rect class="couverture" x="306" y="160" width="54" height="16" rx="7"/>
             </g>
 
-            <!-- LisbonIA endormi -->
+            <!-- Le robot endormi -->
             <g class="dormeur">
               <path class="couverture-bosse" d="M310 166 Q326 151 348 158 L352 170 L310 170 Z"/>
               <g transform="translate(347 136) scale(0.425)">
@@ -125,7 +125,7 @@
             <path class="lampe-pied" d="M104 184 V158 L114 146"/>
             <path class="lampe-tete" d="M108 140 L125 146 L119 154 Z"/>
 
-            <!-- LisbonIA debout (il marche entre son lit et son bureau) -->
+            <!-- Le robot debout (il marche entre son lit et son bureau) -->
             <g class="marcheur">
               <g transform="translate(155 80) scale(1.125)">
                 <g class="robot">
@@ -183,27 +183,27 @@
           <label class="acces-label" for="code">Code d'accès</label>
           <div class="acces-ligne">
             <input class="acces-champ" id="code" name="code" type="password" autocomplete="current-password" minlength="12" required>
-            <button class="bouton" type="submit">Réveiller LisbonIA</button>
+            <button class="bouton" type="submit">Réveiller <span class="nom-robot">Escale</span></button>
           </div>
           <p class="acces-erreur" id="acces-erreur" hidden>Ce code ne marche pas. Réessaie.</p>
         </form>
 
-        <div class="cartes" id="cartes" aria-label="Ce que LisbonIA consulte" hidden>
+        <div class="cartes" id="cartes" aria-label="Ce que le robot consulte" hidden>
           <article class="carte" data-carte="ryanair">
             <h2 class="carte-titre">Ryanair</h2>
-            <p class="carte-sous">Charleroi ↔ Lisbonne, en direct</p>
+            <p class="carte-sous" id="carte-sous-ryanair">Charleroi ↔ Lisbonne, en direct</p>
             <ol class="carte-lignes"></ol>
             <p class="carte-age"></p>
           </article>
           <article class="carte" data-carte="google">
             <h2 class="carte-titre">Google Flights</h2>
-            <p class="carte-sous">Zaventem et Charleroi ↔ Lisbonne</p>
+            <p class="carte-sous" id="carte-sous-google">Zaventem et Charleroi ↔ Lisbonne</p>
             <ol class="carte-lignes"></ol>
             <p class="carte-age"></p>
           </article>
           <article class="carte" data-carte="courbe">
-            <h2 class="carte-titre">Ses records</h2>
-            <p class="carte-sous">Prix par personne, valise comprise</p>
+            <h2 class="carte-titre" id="carte-titre-courbe">Ses records</h2>
+            <p class="carte-sous" id="carte-sous-courbe">Prix par personne, valise comprise</p>
             <ol class="carte-lignes"></ol>
             <p class="carte-age"></p>
           </article>
@@ -223,8 +223,8 @@
             </svg>
           </div>
           <p class="legende">
-            <span class="legende-item legende-horaires">Dans tes horaires</span>
-            <span class="legende-item legende-tous">Tous horaires</span>
+            <span class="legende-item legende-horaires" id="legende-horaires">Dans tes horaires</span>
+            <span class="legende-item legende-tous" id="legende-tous">Tous horaires</span>
           </p>
         </div>
         <div class="bloc journal">
@@ -235,7 +235,7 @@
     </main>
 
     <footer class="pied">
-      <p>Prix relevés sur Ryanair et Google Flights. LisbonIA surveille, il ne réserve jamais rien à ta place.</p>
+      <p>Prix relevés sur Ryanair et Google Flights. <span class="nom-robot">Escale</span> surveille, il ne réserve jamais rien à ta place.</p>
     </footer>
   </div>
   <script type="module" src="js/page.js"></script>
